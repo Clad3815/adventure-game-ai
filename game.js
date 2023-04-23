@@ -143,10 +143,7 @@ async function main() {
     const playerSex = await getUserInput('Choose the sex of your character', true, 'male');
     const description = await getUserInput('Choose the description of your character and all his traits', true, 'Nothing special');
 
-    let player = {
-        username,
-        playerDescription: description,
-    };
+    let player;
     let Welcome = await TranslateText(`Welcome, ${username} ! The game is about to start. Have fun! `);
     console.log(chalk.green(Welcome));
 
