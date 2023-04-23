@@ -26,28 +26,6 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-let spinnerInterval = null;
-
-function startSpinner() {
-    const characters = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
-    const cursorEsc = {
-        hide: '\u001B[?25l',
-        show: '\u001B[?25h',
-    }
-    stdout.write(cursorEsc.hide)
-
-    let i = 0;
-    const timer = setInterval(function() {
-        stdout.write("\r" + characters[i++]);
-        i = i >= characters.length ? 0 : i;
-    }, 150);
-
-    return () => {
-        clearInterval(timer)
-        process.stdout.write("\r")
-        process.stdout.write(cursorEsc.show)
-    }
-}
 
 async function getUserInput(prompt, translate = false, defaultInput = '') {
     prompt = prompt.trim();
@@ -91,7 +69,7 @@ async function TranslateText(text) {
 
 async function shortenSentence(sentence) {
     if (enableAIDebug) console.log(chalk.blue('[DEBUG] Shortening sentence: "') + chalk.red(sentence) + chalk.blue('" ...'));
-    spinner = await ora("Shortening sentence ...").start();
+    spinner = await ora(loadingMessage).start();
     spinner.start();
     let aiData = await aiFunction({
         args: {
@@ -109,7 +87,7 @@ async function shortenSentence(sentence) {
 
 async function initializePlayerAttributes(gameState, playerClass, playerSex, playerDescription) {
     let prompt = fs.readFileSync('./prompt/generate_player_attributes.txt', 'utf8');
-    spinner = await ora(`Generating player attributes...`).start();
+    spinner = await ora(loadingMessage).start();
     spinner.start();
     aiData = await aiFunction({
         args: {
@@ -145,6 +123,7 @@ async function generateValidClass(gameState, playerDescription, playerSex) {
             gameSettings: gameState.gameSettings,
             playerDescription: playerDescription,
             playerSex: playerSex,
+            playerLevel: 1,
         },
         functionName: "generate_player_class",
         description: prompt,
@@ -176,7 +155,7 @@ async function getValidClass(validClasses) {
 async function generateNarrativeText(gameState) {
     // Add your code here to call the AI and generate the narrative text based on the current choice
     let prompt = fs.readFileSync('./prompt/get_narrative_text.txt', 'utf8');
-    spinner = await ora(`Generating narrative text`).start();
+    spinner = await ora(loadingMessage).start();
     spinner.start();
     aiData = await aiFunction({
         args: {
@@ -187,13 +166,13 @@ async function generateNarrativeText(gameState) {
         },
         functionName: "generate_narrative_text",
         description: prompt,
-        funcReturn: "str",
+        funcReturn: "dict[narrative_text:str, needPlayerUpdate:bool]",
         showDebug: enableDebug,
         temperature: 0.8,
         presence_penalty: 0.6,
     });
     spinner.stop();
-    return aiData.trim();
+    return aiData;
 }
 
 // Function to update inventory and stats
@@ -201,24 +180,27 @@ async function updateInventoryAndStats(gameState, narrativeText) {
     // Add your code here to call the AI and update the inventory and stats based on the generated narrative text
     let prompt = fs.readFileSync('./prompt/update_inventory_and_stats.txt', 'utf8');
     if (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0) {
-        prompt += `\nIf the player has no inventory, generate an inventory for the start of the game (up to 10 items), the items must match the game environement and other data (difficulty, player class, etc ...). Example of item: 
-				[{
-				"name": "Knife",
-				"count": 1,
-				"type": "weapon",
-				"value": 1,
-				"equipped": true,
-				}, ...]
-				And generate a player "location" based on the scenario (home, forest, etc ...). Example of location:
-				{
-					"location_name": "Home of the lawyer",
-					"location_reason": "You are there for the quest given by your employer.",
-					"location_type": "home",
-					"location_sub": "Living Room",
-				}
+        prompt += `\nVERY IMPORTANT: If the player has no inventory or an empty inventory, generate a set of inventory item for the start of the game (up to 10 items).
+        Consider the gameSettings to adapt the items data such as language(ensure the output text matches the selected language), difficulty, game environment(e.g., cyberpunk, medieval, fantasy), and other settings.
+        Example of item: 
+        [{
+        "name": "Knife",
+        "count": 1,
+        "type": "weapon",
+        "value": 1,
+        "equipped": true,
+        }, ...]
+        VERY IMPORTANT:  And generate a player "location" based on the narrativeText (home, forest, etc ...). 
+        Example of location:
+        {
+            "location_name": "Home of the lawyer",
+            "location_reason": "You are there for the quest given by your employer.",
+            "location_type": "home",
+            "location_sub": "Living Room",
+        }
 				`;
     }
-    spinner = await ora(`Updating inventory and stats`).start();
+    spinner = await ora(loadingMessage).start();
     spinner.start();
     aiData = await aiFunction({
         args: {
@@ -236,6 +218,46 @@ async function updateInventoryAndStats(gameState, narrativeText) {
     return aiData;
 }
 
+async function generateGameScenario(gameState, player, playerScenario) {
+    if (playerScenario != '') {
+        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username} with user scenario:`) + chalk.green(`${playerScenario}`));
+        spinner = await ora(loadingMessage).start();
+        spinner.start();
+        baseScenario = await aiFunction({
+            args: {
+                gameSettings: gameState.gameSettings,
+                player: player,
+                main_idea: playerScenario,
+            },
+            functionName: "generate_player_scenario",
+            description: `Generate a coherent text-based adventure game starting scenario for the player using all player informations and the main idea. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario will be the start of the game, it's must be entertaining and coherent.`,
+            funcReturn: "str",
+            showDebug: enableDebug,
+            temperature: 0.7,
+        });
+        spinner.stop(); // Stop the spinner after each API call
+        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
+    } else {
+        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username}`));
+        spinner = await ora(loadingMessage).start();
+        spinner.start();
+        baseScenario = await aiFunction({
+            args: {
+                gameSettings: gameState.gameSettings,
+                player: player,
+            },
+            functionName: "generate_player_scenario",
+            description: "Generate a coherent text-based adventure game starting scenario for the player using all player informations. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario will be the start of the game, it's must be entertaining and coherent.",
+            funcReturn: "str",
+            showDebug: enableDebug,
+            temperature: 0.7,
+        });
+        spinner.stop(); // Stop the spinner after each API call
+        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
+    }
+    return baseScenario;
+}
+
 // Function to generate possible choices
 async function generatePossibleChoices(gameState, narrativeText) {
     // Add your code here to call the AI and generate possible choices based on the generated narrative text
@@ -250,8 +272,8 @@ async function main() {
     console.log(chalk.red(`############################`));
     let prompt = fs.readFileSync('./prompt/game_prompt.txt', 'utf8');
     const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', false, 'en');
-    const translateMenuAsk = await getUserInput('Do you want to translate the menu of the game?', false, 'yes');
-    translateMenu = translateMenuAsk == 'yes' ? true : false;
+    const translateMenuAsk = await getUserInput('Do you want to translate the menu of the game? (yes/no)', false, 'no');
+    translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
     choosenLanguage = gameLanguage;
     const username = await getUserInput('Choose your player username', true, 'Jack');
     const gameEnvironment = await getUserInput('Choose the environment of the game (cyberpunk, medieval, Star Wars, ...)', true, 'cyberpunk');
@@ -282,42 +304,9 @@ async function main() {
         ...await initializePlayerAttributes(gameState, playerClass, playerSex, description),
     };
     let baseScenario;
-    if (playerScenario != '') {
-        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username} with user scenario:`) + chalk.green(`${playerScenario}`));
-        spinner = await ora(`Generating player scenario based on user input...`).start();
-        spinner.start();
-        baseScenario = await aiFunction({
-            args: {
-                gameSettings: gameState.gameSettings,
-                player: player,
-                main_idea: playerScenario,
-            },
-            functionName: "generate_player_scenario",
-            description: `Generate a coherent text-based adventure game starting scenario for the player using all player informations and the main idea. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario will be the start of the game, it's must be entertaining and coherent.`,
-            funcReturn: "str",
-            showDebug: enableDebug,
-            temperature: 0.7,
-        });
-        spinner.stop(); // Stop the spinner after each API call
-        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
-    } else {
-        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username}`));
-        spinner = await ora(`Generating random player scenario...`).start();
-        spinner.start();
-        baseScenario = await aiFunction({
-            args: {
-                gameSettings: gameState.gameSettings,
-                player: player,
-            },
-            functionName: "generate_player_scenario",
-            description: "Generate a coherent text-based adventure game starting scenario for the player using all player informations. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario will be the start of the game, it's must be entertaining and coherent.",
-            funcReturn: "str",
-            showDebug: enableDebug,
-            temperature: 0.7,
-        });
-        spinner.stop(); // Stop the spinner after each API call
-        // if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
-    }
+
+    baseScenario = await generateGameScenario(gameState, player, playerScenario);
+
     console.log(chalk.green(`\nScenario: `) + chalk.yellow(`${baseScenario}`) + `\n`);
     gameState = {
         text_history: [],
@@ -365,25 +354,35 @@ async function main() {
         let currentChoice;
         let updatedInventoryStats;
         let narrativeText;
+        let updateInventory;
         try {
             let description = prompt;
             currentChoice = gameState.current_choice;
             // Step 1: Generate narrative text
-            narrativeText = await generateNarrativeText(gameState);
-            while (narrativeText == '') {
-                if (enableAIDebug) console.log(chalk.red(`[DEBUG] Narrative text is empty, generating new narrative text...`));
-                narrativeText = await generateNarrativeText(gameState);
-            }
-            if (enableAIDebug) console.log(chalk.red(`[DEBUG] Narrative text: `) + chalk.green(`${narrativeText}`));
-
-            // Step 2: Update inventory and stats
-            updatedInventoryStats = await updateInventoryAndStats(gameState, narrativeText);
-            if (enableAIDebug) console.log(chalk.red(`[DEBUG] Updated inventory and stats: `) + chalk.green(`${JSON.stringify(updatedInventoryStats)}`));
-            spinner.stop(); // Stop the spinner after each API call
-            // const testInput = await getUserInput(chalk.magenta('Continue? (y/n) '));
-            // if (testInput.toLowerCase() != 'y') {
-            //     continue;
+            // if (enableAIDebug) console.log(gameState);
+            const narrativeTextRequest = await generateNarrativeText(gameState);
+            narrativeText = narrativeTextRequest.narrative_text;
+            // console.log(narrativeText);
+            // while (narrativeText == '') {
+            //     if (enableAIDebug) console.log(chalk.red(`[DEBUG] Narrative text is empty, generating new narrative text...`));
+            //     narrativeText = await generateNarrativeText(gameState);
             // }
+            if (enableAIDebug) {
+                console.log(chalk.red(`[DEBUG] Narrative text: `) + chalk.green(`${JSON.stringify(gameState.playerData)}`));
+            }
+            console.log("Narrative: " + chalk.cyan(narrativeText));
+            updateInventory = narrativeTextRequest.needPlayerUpdate;
+            // Step 2: Update inventory and stats
+            if (narrativeTextRequest.needPlayerUpdate || (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0)) {
+                if (enableAIDebug) console.log(chalk.red(`[DEBUG] Send inventory and stats data: `) + chalk.green(`${JSON.stringify(gameState.playerData)}`));
+                updatedInventoryStats = await updateInventoryAndStats(gameState, narrativeText);
+                if (enableAIDebug) console.log(chalk.red(`[DEBUG] Updated inventory and stats: `) + chalk.green(`${JSON.stringify(updatedInventoryStats)}`));
+                updateInventory = true;
+            } else {
+                if (enableAIDebug) console.log(chalk.red(`[DEBUG] No need to update inventory and stats`));
+                updateInventory = false;
+            }
+            spinner.stop();
 
             // // Step 3: Generate possible choices
             // const possibleChoices = await generatePossibleChoices(gameState, narrativeText);
@@ -393,7 +392,10 @@ async function main() {
             console.log(error);
             continue;
         }
-
+        if (updateInventory && !updatedInventoryStats.player) {
+            if (enableAIDebug) console.log(chalk.red(`[DEBUG] Incorrect player data, re-generating ...`));
+            continue;
+        }
         // Show new items and the count from inventory if the player has new items and show removed items if the player has lost items
         if (updatedInventoryStats.player && updatedInventoryStats.player.inventory) {
             let newItems = [];
@@ -468,7 +470,6 @@ async function main() {
 
 
 
-		console.log(chalk.cyan(narrativeText));
 
 		// aiData.possible_choices.forEach((choice, index) => {
 		// 	console.log(chalk.yellow(`${index + 1}: ${choice}`));
@@ -476,6 +477,7 @@ async function main() {
 
 		const acceptIAAnswer = await getUserInput(chalk.magenta('Accept AI answer? (y/n) '));
 		if (acceptIAAnswer.toLowerCase() != 'y') {
+            console.log(' ');
 			continue;
 		}
         if (updatedInventoryStats.player.inventory) {
@@ -507,8 +509,13 @@ async function main() {
 			gameState.playerData.location = updatedInventoryStats.player.location;
 		}
 
+        if (updatedInventoryStats.player.quest) {
+            gameState.playerData.quest = updatedInventoryStats.player.quest;
+        }
+
 
         const userInput = await getUserInput(chalk.magenta('Your action'));
+        console.log(' ');
     
 
 		gameState.text_history.push({
@@ -526,7 +533,6 @@ async function main() {
             gameState.text_history.shift();
         }
 
-        console.log(' ');
 
         // if (aiData.game_over) {
         //     break;

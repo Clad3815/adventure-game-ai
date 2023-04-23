@@ -26,29 +26,6 @@ const rl = readline.createInterface({
     output: process.stdout,
 });
 
-let spinnerInterval = null;
-
-function startSpinner() {
-    const characters = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
-    const cursorEsc = {
-        hide: '\u001B[?25l',
-        show: '\u001B[?25h',
-    }
-    stdout.write(cursorEsc.hide)
-
-    let i = 0;
-    const timer = setInterval(function() {
-        stdout.write("\r" + characters[i++]);
-        i = i >= characters.length ? 0 : i;
-    }, 150);
-
-    return () => {
-        clearInterval(timer)
-        process.stdout.write("\r")
-        process.stdout.write(cursorEsc.show)
-    }
-}
-
 async function getUserInput(prompt, translate = false, defaultInput = '') {
     prompt = prompt.trim();
     if (translate) prompt = await TranslateText(prompt);

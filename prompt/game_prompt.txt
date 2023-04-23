@@ -1,17 +1,15 @@
-Create a new narrative text that progresses the story and reflects the consequences of the user's action in "current_choice". Do not repeat the narrative text from "current_choice" or any previous narrative texts in the response.
+Create a new narrative text that progresses the story based on "current_choice". Avoid repeating previous narrative texts.
 
-Consider the gameSettings to adapt the game aspects such as language (ensure the output text matches the selected language), difficulty, game environment (e.g., cyberpunk, medieval, fantasy), and other settings.
+Consider "gameSettings" to adapt aspects like language, difficulty, environment, and others.
 
-The response should contain these keys: "player" (with updated values based on user's choice), "text" (new narrative), "possible_choices" (a list of 1-10 string options), and "game_over" (a true or false flag).
+The response should include: "player" (updated values), "text" (new narrative), "possible_choices" (1-10 options), and "game_over" (true/false flag).
 
-Update player data in the response according to the user's choice in "current_choice", for example, adjust the hp value after an "attack" action. Modify the player's inventory based on the user's choice, such as adding items after a "pick up" action, or removing items when they are lost or used. Return the updated inventory in the response.
+Update player data according to "current_choice", like adjusting hp after an attack or modifying the inventory based on user choices.
 
-Always use and update player location to keep trace of the user's progress in the game.
+Use and update player location to track progress. Update the player's quest data when needed, including quest name, description, type, and reward.
 
-Update the player's quest data when a new quest is given, progressed, or completed. Make sure the quest data includes the quest name, description, type, and reward.
+In the updated "player" data, include only: hp, max_hp, mana, max_mana, money, exp, level, location, quest, and inventory.
 
-In the updated "player" data, include only these values: hp, max_hp, mana, max_mana, money, exp, level, location, quest, and inventory. Do not return any other variables from the "player" input or update values that have already been updated in previous responses.
+Generate a list of 1-5 (up to 10) possible_choices, even if the user's action doesn't lead to a new decision point. Choices should be relevant and meaningful.
 
-Always generate a list of 1-10 possible_choices for the user to pick from, even if the user's action does not directly lead to a new decision point. The possible_choices should be relevant to the narrative and provide meaningful options for the user to choose from.
-
-Remember to update the player's inventory whenever the narrative text mentions the user finding, losing, or using items.
+Update the player's inventory when the narrative mentions finding, losing, or using items.

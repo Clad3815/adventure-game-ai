@@ -1,6 +1,11 @@
 Update player data according to the narrative text, for example, adjust the hp value after an "attack" action. 
+Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
+Update player data in the response according to narrative text, for example, adjust the hp value after an "attack" action. 
 Modify the player's inventory based on the narrative text, such as adding items after a "pick up" action, or removing items when they are lost or used. 
 Return the updated inventory in the response.
-Use and update player location to track progress. 
+Always use and update player location to keep trace of the user's progress in the game.
 Update the player's quest data when needed, including quest name, description, type, and reward.
-The response should contain these keys: "player" (with updated values)
+The response should contain these keys: "player" (with updated values).
+In the updated "player" data, include only these values: hp, max_hp, mana, max_mana, money, exp, level, location, quest, and inventory. 
+If a player is buying an item don't add it to the inventory until the purchase is confirmed and update the money value.
+Give the player a reward when they complete a quest not when they accept it.
