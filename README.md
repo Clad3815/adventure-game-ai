@@ -45,7 +45,7 @@ npm install
 node game.js
 ```
 
-2. Follow the prompts to customize your game and create your character.
+2. Follow the prompts to customize your game and create your character. You can also use the default settings by pressing `Enter` when prompted.
 
 3. Play the generated game and enjoy the adventure!
 

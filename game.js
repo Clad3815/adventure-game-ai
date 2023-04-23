@@ -4,9 +4,9 @@ const chalk = require('chalk'); // Import chalk
 const fs = require('fs');
 
 
-const enableDebug = true; // Set to true to enable debug mode
+const enableDebug = false; // Set to true to enable debug mode
 const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
-const translateMenu = false; // Set to true to translate the menu
+let translateMenu = false; // Set to true to translate the menu
 
 let choosenLanguage = '';
 
@@ -19,6 +19,7 @@ async function getUserInput(prompt, translate = false, defaultInput = '') {
     prompt = prompt.trim();
     if (translate) prompt = await TranslateText(prompt);
     if (defaultInput != '') prompt = prompt + ` [${defaultInput}] : `;
+    else prompt = prompt + ' : ';
     return new Promise((resolve) => {
         rl.question(chalk.yellow(prompt), (input) => {
             // Check if default input is set and if so, return it if the user input is empty
@@ -136,9 +137,12 @@ async function main() {
     console.log(chalk.red(`############################`));
     let prompt = fs.readFileSync('./prompt/game_prompt.txt', 'utf8');
     const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', false, 'en');
+    const translateMenuAsk = await getUserInput('Do you want to translate the menu of the game?', false, 'yes');
+    translateMenu = translateMenuAsk == 'yes' ? true : false;
     choosenLanguage = gameLanguage;
     const username = await getUserInput('Choose your player username', true, 'Jack');
     const gameEnvironment = await getUserInput('Choose the environment of the game (cyberpunk, medieval, Star Wars, ...)', true, 'cyberpunk');
+    const playerScenario = await getUserInput('Write a short scenario for the start of the game (Optional)', true, '');
     const gameDifficulty = await getUserInput('Choose the difficulty of the game (easy, medium, hard, etc.)', true, 'easy');
     const playerSex = await getUserInput('Choose the sex of your character', true, 'male');
     const description = await getUserInput('Choose the description of your character and all his traits', true, 'Nothing special');
@@ -164,7 +168,40 @@ async function main() {
         playerDescription: description,
         ...await initializePlayerAttributes(gameState, playerClass),
     };
-    const baseScenario = `Generating scenario for ${player.username}...`;
+    let baseScenario;
+    if (playerScenario != '') {
+        console.log(chalk.green(`Generating player scenario based on user input...`));
+        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username} with user scenario:`) + chalk.green(`${playerScenario}`));
+        baseScenario = await aiFunction({
+            args: {
+                gameSettings: gameState.gameSettings,
+                player: player,
+                main_idea: playerScenario,
+            },
+            functionName: "generate_player_scenario",
+            description: `Generate a scenario for the player using all player informations and the main idea. Use the gameSettings to modify game aspects like language (The output text must match the language selected but variable name must always be in english), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.`,
+            funcReturn: "str",
+            showDebug: enableDebug,
+            temperature: 0.7,
+        });
+        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
+    } else {
+        console.log(chalk.green(`Generating random player scenario...`));
+        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username}`));
+        baseScenario = await aiFunction({
+            args: {
+                gameSettings: gameState.gameSettings,
+                player: player,
+            },
+            functionName: "generate_player_scenario",
+            description: "Generate a scenario for the player using all player informations. Use the gameSettings to modify game aspects like language (The output text must match the language selected but variable name must always be in english), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.",
+            funcReturn: "str",
+            showDebug: enableDebug,
+            temperature: 0.7,
+        });
+        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
+    }
+    console.log(chalk.green(`Scenario:`) + chalk.yellow(`${baseScenario}`));
     gameState = {
         text_history: [],
         current_choice: {
