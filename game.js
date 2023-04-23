@@ -6,6 +6,8 @@ const fs = require('fs');
 
 let ora;
 
+const loadingMessage = 'Thinking...';
+
 async function loadOra() {
     ora = (await
         import ('ora')).default;
@@ -69,6 +71,7 @@ async function TranslateText(text) {
     if (choosenLanguage == '' || choosenLanguage == 'en' || !translateMenu) {
         return text;
     }
+    spinner = await ora("Translating...").start(); // Create a spinner with "Loading..." text
     spinner.start(); // Start the spinner before each API call
     let aiData = await aiFunction({
         args: {
@@ -88,6 +91,7 @@ async function TranslateText(text) {
 
 async function shortenSentence(sentence) {
     if (enableAIDebug) console.log(chalk.blue('[DEBUG] Shortening sentence: "') + chalk.red(sentence) + chalk.blue('" ...'));
+    spinner = await ora("Shortening sentence ...").start(); // Create a spinner with "Loading..." text
     spinner.start(); // Start the spinner before each API call
     let aiData = await aiFunction({
         args: {
@@ -104,8 +108,8 @@ async function shortenSentence(sentence) {
 }
 
 async function initializePlayerAttributes(gameState, playerClass) {
-    console.log(chalk.green(`Generating player attributes...`));
     let prompt = fs.readFileSync('./prompt/generate_player_attributes.txt', 'utf8');
+    spinner = await ora(`Generating player attributes...`).start(); // Create a spinner with "Loading..." text
     spinner.start(); // Start the spinner before each API call
     aiData = await aiFunction({
         args: {
@@ -126,19 +130,13 @@ async function initializePlayerAttributes(gameState, playerClass) {
         console.log(chalk.red(`####################`));
         return [];
     }
-    console.log(chalk.red(`####################`));
 
-    console.log(chalk.green(`HP: ${aiData.hp}/${aiData.max_hp}`));
-    console.log(chalk.green(`Mana: ${aiData.mana}/${aiData.max_mana}`));
-    console.log(chalk.green(`Money: ${aiData.money}`));
-    console.log(chalk.green(`Attributes: ${aiData.attributes_list}`));
-    console.log(chalk.red(`####################`));
     return aiData;
 }
 
 async function generateValidClass(gameState, playerDescription, playerSex) {
-    console.log(chalk.green(`Generating player classes...`));
     let prompt = fs.readFileSync('./prompt/generate_random_classes.txt', 'utf8');
+    spinner = await ora(`Generating player classes...`).start(); // Create a spinner with "Loading..." text
     spinner.start(); // Start the spinner before each API call
     aiData = await aiFunction({
         args: {
@@ -173,7 +171,7 @@ async function getValidClass(validClasses) {
 }
 async function main() {
     await loadOra();
-    spinner = await ora('Thinking ...').start(); // Create a spinner with "Loading..." text
+    spinner = await ora(loadingMessage).start(); // Create a spinner with "Loading..." text
     spinner.stop(); // Stop the spinner after each API call
     console.log(chalk.red(`############################`));
     console.log(chalk.red(`## Generate Your Own Game ##`));
@@ -191,9 +189,7 @@ async function main() {
     const description = await getUserInput('Choose the description of your character and all his traits', true, 'Nothing special');
 
     let player;
-    spinner.start(); // Start the spinner before each API call
-    let Welcome = await TranslateText(`Welcome, ${username} ! The game is about to start. Have fun! `);
-    spinner.stop(); // Stop the spinner after each API call
+    let Welcome = await TranslateText(`\nWelcome, ${username} ! The game is about to start. Have fun! `);
     console.log(chalk.green(Welcome));
 
     let gameState = {
@@ -215,8 +211,8 @@ async function main() {
     };
     let baseScenario;
     if (playerScenario != '') {
-        console.log(chalk.green(`Generating player scenario based on user input...`));
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username} with user scenario:`) + chalk.green(`${playerScenario}`));
+        spinner = await ora(`Generating player scenario based on user input...`).start(); // Create a spinner with "Loading..." text
         spinner.start(); // Start the spinner before each API call
         baseScenario = await aiFunction({
             args: {
@@ -233,7 +229,7 @@ async function main() {
         spinner.stop(); // Stop the spinner after each API call
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
     } else {
-        console.log(chalk.green(`Generating random player scenario...`));
+        spinner = await ora(`Generating random player scenario...`).start(); // Create a spinner with "Loading..." text
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username}`));
         spinner.start(); // Start the spinner before each API call
         baseScenario = await aiFunction({
@@ -250,7 +246,7 @@ async function main() {
         spinner.stop(); // Stop the spinner after each API call
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
     }
-    console.log(chalk.green(`Scenario: `) + chalk.yellow(`${baseScenario}`));
+    console.log(chalk.green(`\nScenario: `) + chalk.yellow(`${baseScenario}`) + `\n`);
     gameState = {
         text_history: [],
         current_choice: {
@@ -317,6 +313,7 @@ async function main() {
 				`;
             }
             if (enableAIDebug) console.log(chalk.red('[DEBUG] Sending request to AI: ') + chalk.yellow(JSON.stringify(gameState)));
+            spinner = await ora(loadingMessage).start(); // Create a spinner with "Loading..." text
             spinner.start(); // Start the spinner before each API call
             aiData = await aiFunction({
                 args: gameState,
@@ -432,7 +429,6 @@ async function main() {
 
 		const acceptIAAnswer = await getUserInput(chalk.magenta('Accept AI answer? (y/n) '));
 		if (acceptIAAnswer.toLowerCase() != 'y') {
-			console.log(chalk.red('Regenerating...'));
 			continue;
 		}
         if (aiData.player.inventory) {
