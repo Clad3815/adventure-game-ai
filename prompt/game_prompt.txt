@@ -12,6 +12,6 @@ Update the player's quest data when a new quest is given, progressed, or complet
 
 In the updated "player" data, include only these values: hp, max_hp, mana, max_mana, money, exp, level, location, quest, and inventory. Do not return any other variables from the "player" input or update values that have already been updated in previous responses.
 
-Always generate a list of 1-5 (up to 10) possible_choices for the user to pick from, even if the user's action does not directly lead to a new decision point. The possible_choices should be relevant to the narrative and provide meaningful options for the user to choose from.
+Always generate a list of 1-10 possible_choices for the user to pick from, even if the user's action does not directly lead to a new decision point. The possible_choices should be relevant to the narrative and provide meaningful options for the user to choose from.
 
 Remember to update the player's inventory whenever the narrative text mentions the user finding, losing, or using items.
