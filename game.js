@@ -78,7 +78,6 @@ async function initializePlayerAttributes(gameState, playerClass) {
         description: prompt,
         funcReturn: "dict[hp, max_hp, mana, max_mana, money, attributes_list]",
         showDebug: enableDebug,
-        // showDebug: true,
         autoConvertReturn: true,
         temperature: 0.7,
     });
@@ -111,11 +110,9 @@ async function generateValidClass(gameState, playerDescription, playerSex) {
         description: prompt,
         funcReturn: "list[str]",
         showDebug: enableDebug,
-        // showDebug: true,
         autoConvertReturn: true,
         temperature: 0.7,
     });
-    // console.log(chalk.green(`AI: ${aiData}`));
     if (aiData == null) {
         console.log(chalk.red(`####################`));
         console.log(chalk.red(`Error: ${aiData}`));
@@ -243,14 +240,13 @@ async function main() {
                 description: description.split('\n').map(line => line.trim()).join('\n'),
                 funcReturn: "dict",
                 showDebug: enableDebug,
-                // showDebug: true,
                 temperature: 0.8,
                 frequency_penalty: 0.6,
-                presence_penalty: 0.6
+                presence_penalty: 0.6,
+                // model: "gpt4",
             });
             if (enableDebug) console.log(aiData);
             if (enableAIDebug) console.log(chalk.red('[DEBUG] Data got from AI: ') + chalk.yellow(JSON.stringify(aiData)) + '\n');
-            // console.log(aiData);
         } catch (error) {
             console.log(error);
             continue;
@@ -353,10 +349,6 @@ async function main() {
 			console.log(chalk.red('Regenerating...'));
 			continue;
 		}
-        // gameState = {
-        //     ...gameState,
-        //     ...aiData,
-        // };
         if (aiData.player.inventory) {
             gameState.playerData.inventory = aiData.player.inventory;
         }

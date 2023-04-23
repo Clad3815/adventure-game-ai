@@ -36,11 +36,6 @@ npm install
 
 4. Edit the `game.js` file to change the [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) path
 
-5. Run the game:
-
-```bash
-node game.js
-```
 
 ## Usage
 
