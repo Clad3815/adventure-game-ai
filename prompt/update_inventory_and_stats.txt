@@ -1,0 +1,6 @@
+Update player data according to the narrative text, for example, adjust the hp value after an "attack" action. 
+Modify the player's inventory based on the narrative text, such as adding items after a "pick up" action, or removing items when they are lost or used. 
+Return the updated inventory in the response.
+Use and update player location to track progress. 
+Update the player's quest data when needed, including quest name, description, type, and reward.
+The response should contain these keys: "player" (with updated values)
