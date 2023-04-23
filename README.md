@@ -32,7 +32,7 @@ git clone https://github.com/clad3815/adventure-game-ai.git
 npm install
 ```
 
-3. Edit the `game.js` file to change the ai-function-helper path
+3. Edit the `game.js` file to change the [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) path
 
 4. Run the game:
 
