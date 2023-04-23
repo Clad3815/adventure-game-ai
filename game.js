@@ -138,7 +138,7 @@ async function main() {
     const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', false, 'en');
     choosenLanguage = gameLanguage;
     const username = await getUserInput('Choose your player username', true, 'Jack');
-    const gameEnvironment = await getUserInput('Choose the environment of the game (cyberpunk, medieval, fantasy, etc.)', true, 'cyberpunk');
+    const gameEnvironment = await getUserInput('Choose the environment of the game (cyberpunk, medieval, Star Wars, ...)', true, 'cyberpunk');
     const gameDifficulty = await getUserInput('Choose the difficulty of the game (easy, medium, hard, etc.)', true, 'easy');
     const playerSex = await getUserInput('Choose the sex of your character', true, 'male');
     const description = await getUserInput('Choose the description of your character and all his traits', true, 'Nothing special');
