@@ -12,7 +12,7 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 - Continuous gameplay with generated narrative and choices
 - Inventory / location and quest management
 
-### Todo
+## Todo
 
 - [ ] Make multiple prompt instead of one large one to avoid confusion for `gpt3.5-turbo`
 
