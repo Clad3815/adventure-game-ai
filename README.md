@@ -32,15 +32,15 @@ git clone https://github.com/clad3815/adventure-game-ai.git
 npm install
 ```
 
-3. Edit the `game.js` file to change the [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) path
+3. Make sure you have [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) installed and configured with your OpenAI API key.
 
-4. Run the game:
+4. Edit the `game.js` file to change the [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) path
+
+5. Run the game:
 
 ```bash
 node game.js
 ```
-
-4. Make sure you have [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) installed and configured with your OpenAI API key.
 
 ## Usage
 
