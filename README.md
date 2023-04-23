@@ -2,13 +2,15 @@
 
 Adventure Game Generator is a text-based game creation tool that allows you to generate your own interactive adventure games using the power of OpenAI. This project relies on the [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) library to generate game content and handle player choices.
 
+This project has been tested with `gpt3.5-turbo` and must return better result with `gpt4` model.
+
 ## Features
 
 - Customizable game settings, including language, environment, and difficulty
 - Dynamic player class generation based on character description and player sex
 - Automatic player attribute generation
 - Continuous gameplay with generated narrative and choices
-- Inventory and location management
+- Inventory / location and quest management
 
 ## Requirements
 
