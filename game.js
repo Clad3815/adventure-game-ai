@@ -2,7 +2,16 @@ const readline = require('readline');
 const aiFunction = require('../ai-function-helper/src/aiFunction');
 const chalk = require('chalk'); // Import chalk
 const fs = require('fs');
+// const ora = require('ora'); // Import ora for the spinner
 
+let ora;
+
+async function loadOra() {
+    ora = (await
+        import ('ora')).default;
+}
+
+let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
 const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
@@ -14,6 +23,29 @@ const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
 });
+
+let spinnerInterval = null;
+
+function startSpinner() {
+    const characters = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+    const cursorEsc = {
+        hide: '\u001B[?25l',
+        show: '\u001B[?25h',
+    }
+    stdout.write(cursorEsc.hide)
+
+    let i = 0;
+    const timer = setInterval(function() {
+        stdout.write("\r" + characters[i++]);
+        i = i >= characters.length ? 0 : i;
+    }, 150);
+
+    return () => {
+        clearInterval(timer)
+        process.stdout.write("\r")
+        process.stdout.write(cursorEsc.show)
+    }
+}
 
 async function getUserInput(prompt, translate = false, defaultInput = '') {
     prompt = prompt.trim();
@@ -37,6 +69,7 @@ async function TranslateText(text) {
     if (choosenLanguage == '' || choosenLanguage == 'en' || !translateMenu) {
         return text;
     }
+    spinner.start(); // Start the spinner before each API call
     let aiData = await aiFunction({
         args: {
             text: text,
@@ -49,11 +82,13 @@ async function TranslateText(text) {
         autoConvertReturn: true,
         temperature: 0.7,
     });
+    spinner.stop(); // Stop the spinner after each API call
     return aiData;
 }
 
 async function shortenSentence(sentence) {
     if (enableAIDebug) console.log(chalk.blue('[DEBUG] Shortening sentence: "') + chalk.red(sentence) + chalk.blue('" ...'));
+    spinner.start(); // Start the spinner before each API call
     let aiData = await aiFunction({
         args: {
             sentence: sentence,
@@ -64,12 +99,14 @@ async function shortenSentence(sentence) {
         temperature: 1,
     });
     if (enableAIDebug) console.log(chalk.blue('[DEBUG] Shortened sentence: "') + chalk.red(aiData) + chalk.blue('"'));
+    spinner.stop(); // Stop the spinner after each API call
     return aiData;
 }
 
 async function initializePlayerAttributes(gameState, playerClass) {
     console.log(chalk.green(`Generating player attributes...`));
     let prompt = fs.readFileSync('./prompt/generate_player_attributes.txt', 'utf8');
+    spinner.start(); // Start the spinner before each API call
     aiData = await aiFunction({
         args: {
             gameSettings: gameState.gameSettings,
@@ -82,6 +119,7 @@ async function initializePlayerAttributes(gameState, playerClass) {
         autoConvertReturn: true,
         temperature: 0.7,
     });
+    spinner.stop(); // Stop the spinner after each API call
     if (aiData == null) {
         console.log(chalk.red(`####################`));
         console.log(chalk.red(`Error: ${aiData}`));
@@ -101,6 +139,7 @@ async function initializePlayerAttributes(gameState, playerClass) {
 async function generateValidClass(gameState, playerDescription, playerSex) {
     console.log(chalk.green(`Generating player classes...`));
     let prompt = fs.readFileSync('./prompt/generate_random_classes.txt', 'utf8');
+    spinner.start(); // Start the spinner before each API call
     aiData = await aiFunction({
         args: {
             gameSettings: gameState.gameSettings,
@@ -114,6 +153,7 @@ async function generateValidClass(gameState, playerDescription, playerSex) {
         autoConvertReturn: true,
         temperature: 0.7,
     });
+    spinner.stop(); // Stop the spinner after each API call
     if (aiData == null) {
         console.log(chalk.red(`####################`));
         console.log(chalk.red(`Error: ${aiData}`));
@@ -132,6 +172,9 @@ async function getValidClass(validClasses) {
     return playerClass;
 }
 async function main() {
+    await loadOra();
+    spinner = await ora('Thinking ...').start(); // Create a spinner with "Loading..." text
+    spinner.stop(); // Stop the spinner after each API call
     console.log(chalk.red(`############################`));
     console.log(chalk.red(`## Generate Your Own Game ##`));
     console.log(chalk.red(`############################`));
@@ -148,7 +191,9 @@ async function main() {
     const description = await getUserInput('Choose the description of your character and all his traits', true, 'Nothing special');
 
     let player;
+    spinner.start(); // Start the spinner before each API call
     let Welcome = await TranslateText(`Welcome, ${username} ! The game is about to start. Have fun! `);
+    spinner.stop(); // Stop the spinner after each API call
     console.log(chalk.green(Welcome));
 
     let gameState = {
@@ -172,6 +217,7 @@ async function main() {
     if (playerScenario != '') {
         console.log(chalk.green(`Generating player scenario based on user input...`));
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username} with user scenario:`) + chalk.green(`${playerScenario}`));
+        spinner.start(); // Start the spinner before each API call
         baseScenario = await aiFunction({
             args: {
                 gameSettings: gameState.gameSettings,
@@ -184,10 +230,12 @@ async function main() {
             showDebug: enableDebug,
             temperature: 0.7,
         });
+        spinner.stop(); // Stop the spinner after each API call
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
     } else {
         console.log(chalk.green(`Generating random player scenario...`));
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generating base scenario for ${player.username}`));
+        spinner.start(); // Start the spinner before each API call
         baseScenario = await aiFunction({
             args: {
                 gameSettings: gameState.gameSettings,
@@ -199,9 +247,10 @@ async function main() {
             showDebug: enableDebug,
             temperature: 0.7,
         });
+        spinner.stop(); // Stop the spinner after each API call
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Generated scenario: `) + chalk.green(`${baseScenario}`));
     }
-    console.log(chalk.green(`Scenario:`) + chalk.yellow(`${baseScenario}`));
+    console.log(chalk.green(`Scenario: `) + chalk.yellow(`${baseScenario}`));
     gameState = {
         text_history: [],
         current_choice: {
@@ -268,6 +317,7 @@ async function main() {
 				`;
             }
             if (enableAIDebug) console.log(chalk.red('[DEBUG] Sending request to AI: ') + chalk.yellow(JSON.stringify(gameState)));
+            spinner.start(); // Start the spinner before each API call
             aiData = await aiFunction({
                 args: gameState,
                 functionName: "text_based_adventure_game",
@@ -279,9 +329,11 @@ async function main() {
                 presence_penalty: 0.6,
                 // model: "gpt4",
             });
+            spinner.stop(); // Stop the spinner after each API call
             if (enableDebug) console.log(aiData);
             if (enableAIDebug) console.log(chalk.red('[DEBUG] Data got from AI: ') + chalk.yellow(JSON.stringify(aiData)) + '\n');
         } catch (error) {
+            spinner.stop(); // Stop the spinner after each API call
             console.log(error);
             continue;
         }
@@ -422,17 +474,11 @@ async function main() {
         }
         const current_choice = aiData.possible_choices[userChoice - 1];
 
-		if (baseScenario == currentChoice.narrative_text) {
-			gameState.text_history.push({
-				narrative_text: currentChoice.narrative_text,
-				user_choice: currentChoice.user_choice,
-			});
-		} else {
-			gameState.text_history.push({
-				narrative_text: await shortenSentence(currentChoice.narrative_text),
-				user_choice: currentChoice.user_choice,
-			});
-		}
+		gameState.text_history.push({
+			narrative_text: await shortenSentence(currentChoice.narrative_text),
+			user_choice: currentChoice.user_choice,
+		});
+		
 
 		gameState.current_choice = {
 			narrative_text: aiData.text,
