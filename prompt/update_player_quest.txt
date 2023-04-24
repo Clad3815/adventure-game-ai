@@ -1,0 +1,2 @@
+Update the player's quest data when needed based on the narrative text, including quest name, description, type, and reward. Give the player a reward when they complete a quest, not when they accept it. If a player gets new information about a quest, update the quest data in the response. Return the updated quest data.
+Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.

@@ -1,0 +1,8 @@
+Modify the player's inventory based on the narrative text, such as adding items after a "pick up" action, or removing items when they are lost or used. 
+Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
+When crafting an item, remove the ingredients from the inventory and add the crafted item to the inventory. 
+When upgrading an item, remove the materials used for the upgrade, and update the existing item in the inventory with its upgraded properties. 
+If a player is buying an item don't add it to the inventory until the purchase is confirmed.
+Give the player the reward when they complete a quest not when they accept it.
+If a item is renamed, delete the old item and add the new one to the inventory and change the data accordly to new information
+If a player get new information about a item from inventory, update the item data in the response.

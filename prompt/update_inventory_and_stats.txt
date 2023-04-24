@@ -11,3 +11,4 @@ If a player is buying an item don't add it to the inventory until the purchase i
 Give the player a reward when they complete a quest not when they accept it.
 If a player get new information about a item from inventory or quest, update the item data in the response.
 If a item is renamed, delete the old item and add the new one to the inventory and change the data accordly to new information
+When crafting an item, remove the ingredients from the inventory and add the crafted item to the inventory.

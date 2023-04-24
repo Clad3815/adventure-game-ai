@@ -15,3 +15,4 @@ You must set "needLocationUpdate" to True if the player's location has changed. 
 You must set "needQuestUpdate" to True if the player's quest has changed or if any new information is given in the text. This will trigger the game to update the player's quest in the database.
 You must set "isGameOver" to True if the player has died. This will trigger the game to end the game and display the game over screen.
 Do not repeat the narrative text from "current_choice" or any previous narrative texts from "text_history" in the response.
+When crafting an item, explain which ingredients the player use and what is the result of the crafting

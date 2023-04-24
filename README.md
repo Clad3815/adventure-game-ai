@@ -7,6 +7,7 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 ## Features
 
 - Customizable game settings, including language, environment, and difficulty
+- Auto convert menu language to the game language if wanted
 - Dynamic player class generation based on character description and player sex
 - Automatic player attribute generation
 - Continuous gameplay with generated narrative and choices

@@ -1,0 +1,1 @@
+Update player data according to the narrative text, for example, adjust the hp value after an "attack" action. Return the updated player data with these values: hp, max_hp, mana, max_mana, money, exp, next_level_exp, and level.
