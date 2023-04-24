@@ -1,57 +1,14 @@
 const readline = require('readline');
 const aiFunction = require('../ai-function-helper/src/aiFunction');
-const chalk = require('chalk'); // Import chalk
+const chalk = require('chalk');
 const fs = require('fs');
-// const ora = require('ora'); // Import ora for the spinner
+const path = require('path');
+
+let translateTextTable = require('./lang');
 
 let ora;
 
 let firstBoot = true;
-
-let translateTextTable = {
-    error: 'Error',
-    generating_class: 'Generating player classes...',
-    choose_player_username: 'Choose your player username',
-    choose_game_environment: 'Choose the environment of the game (cyberpunk, medieval, Star Wars, ...)',
-    choose_game_environment_default: 'cyberpunk',
-    choose_game_difficulty: 'Choose the difficulty of the game (easy, medium, hard, etc.)',
-    choose_game_difficulty_default: 'easy',
-    choose_player_scenario: 'Write a short scenario for the start of the game (Optional)',
-    choose_player_sex: 'Choose the sex of your character',
-    choose_player_sex_default: 'male',
-    choose_player_description: 'Choose the description of your character and all his traits',
-    choose_player_description_default: 'Nothing special',
-    select_player_action: 'Choose your next action (1, 2, etc ...) or enter custom action',
-    select_player_action_custom: 'Your next action',
-    player_level_change: 'Your level is now:',
-    player_hp_change: 'Your HP is now:',
-    player_mana_change: 'Your mana is now:',
-    player_exp_change: 'Your experience is now:',
-    player_next_level_exp_change: 'Your next level experience is now:',
-    player_money_change: 'Your money is now:',
-    player_interface_value_change: 'change',
-    player_location_change: 'Your location is now:',
-    player_new_quest: 'You have a new quest:',
-    player_new_item: 'You got new items:',
-    player_lost_item: 'You lost items:',
-    accept_ia_answer: 'Accept AI answer?',
-    loading_message: 'Loading...',
-    translating_text: 'Translating...',
-    choose_player_class: 'Choose a class',
-    welcome_game: 'Welcome, [username] ! The game is about to start. Have fun!',
-    player_start_game: 'Starting the game...',
-    shortening_sentence: 'Optimizing text size...',
-    init_player_attribute: 'Initializing player attributes...',
-    get_narrative_text: 'Generating narrative text...',
-    update_inventory_stats: 'Updating player/inventory/location/quest data...',
-    generate_game_scenario: 'Generating game scenario...',
-    generate_possible_choices: 'Generating possible choices...',
-    update_player_inventory: 'Update player inventory...',
-    update_player_location: 'Update player location...',
-    update_player_quest: 'Update player quest...',
-    update_player_stats: 'Update player stats...',
-
-}
 
 async function loadOra() {
     ora = (await
@@ -90,24 +47,41 @@ async function getUserInput(prompt, translate = false, defaultInput = '') {
 let possible_classes = [];
 
 async function TranslateMenuText(language) {
-    spinner = await ora(translateTextTable.translating_text).start();
-    spinner.start();
-    let aiData = await aiFunction({
-        args: {
-            data: translateTextTable,
-            to: language,
-        },
-        functionName: "translate_text",
-        description: `Generate a translate dict from the "data" dict value from one language to another. Use the "to" arguments to specify destination language. The text is from a game user interface.`,
-        funcReturn: "list[dict[index: str, value: str]]",
-        showDebug: enableDebug,
-        temperature: 0.3,
-    });
-    for (const [key, value] of Object.entries(aiData)) {
-        translateTextTable[value.index] = value.value;
+    // Define the file path for the translated menu
+    const filePath = path.join(__dirname, `translate/translatedMenu_${language}.json`);
+
+    // Check if the file exists
+    if (fs.existsSync(filePath)) {
+        // Load the translation from the file
+        translateTextTable = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } else {
+        // Translate the text and save it to a file
+        spinner = await ora(translateTextTable.translating_text).start();
+        spinner.start();
+        let aiData = await aiFunction({
+            args: {
+                data: translateTextTable,
+                to: language,
+            },
+            functionName: "translate_text",
+            description: `Generate a translate dict from the "data" dict value from one language to another. Use the "to" arguments to specify destination language. The text is from a game user interface.`,
+            funcReturn: "list[dict[index: str, value: str]]",
+            showDebug: enableDebug,
+            temperature: 0.3,
+        });
+
+        // Update the translateTextTable
+        for (const [key, value] of Object.entries(aiData)) {
+            translateTextTable[value.index] = value.value;
+        }
+
+        // Save the translation to a file
+        fs.writeFileSync(filePath, JSON.stringify(translateTextTable), 'utf8');
+
+        spinner.stop();
     }
-    spinner.stop();
-    return aiData;
+
+    return translateTextTable;
 }
 
 
@@ -216,10 +190,8 @@ async function getValidClass(validClasses) {
     return playerClass;
 }
 
-// Function to generate narrative text
 async function generateNarrativeText(gameState) {
-    // Add your code here to call the AI and generate the narrative text based on the current choice
-    let prompt = fs.readFileSync('./prompt/get_narrative_text.txt', 'utf8');
+    let prompt = fs.readFileSync('./prompt/multi_prompt/get_narrative_text.txt', 'utf8');
     spinner = await ora(translateTextTable.get_narrative_text).start();
     spinner.start();
     aiData = await aiFunction({
@@ -241,10 +213,8 @@ async function generateNarrativeText(gameState) {
     return aiData;
 }
 
-// Function to update inventory and stats
 async function updateInventoryAndStats(gameState, narrativeText) {
-    // Add your code here to call the AI and update the inventory and stats based on the generated narrative text
-    let prompt = fs.readFileSync('./prompt/update_inventory_and_stats.txt', 'utf8');
+    let prompt = fs.readFileSync('./prompt/multi_prompt/update_inventory_and_stats.txt', 'utf8');
     if (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0) {
         prompt += `\nVERY IMPORTANT: If the player has no inventory or an empty inventory, generate a set of inventory item for the start of the game (up to 10 items).
         Consider the gameSettings to adapt the items data such as language(ensure the output text matches the selected language), difficulty, game environment(e.g., cyberpunk, medieval, fantasy), and other settings.
@@ -333,7 +303,6 @@ async function generateGameScenario(gameState, player, playerScenario) {
     return baseScenario;
 }
 
-// Function to generate possible choices
 async function generatePossibleChoices(gameState, narrativeText) {
     const prompt = fs.readFileSync('./prompt/generate_narrative_choices.txt', 'utf8');
     spinner = await ora(translateTextTable.generate_possible_choices).start();
@@ -407,8 +376,6 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
     const newPlayer = updatedInventoryStats.playerData;
     const oldPlayer = gameState.playerData;
 
-    // if (enableAIDebug) console.log('newPlayer', JSON.stringify(newPlayer));
-    // if (enableAIDebug) console.log('oldPlayer', JSON.stringify(oldPlayer));
     if (newPlayer) {
         logIfChanged(oldPlayer.level, newPlayer.level, `>>> ${translateTextTable.player_level_change} ${newPlayer.level}`);
         logIfChanged(oldPlayer.hp, newPlayer.hp, `>>> ${translateTextTable.player_hp_change} ${newPlayer.hp}/${oldPlayer.max_hp}`, translateTextTable.player_interface_value_change + `: ${newPlayer.hp - oldPlayer.hp}`);
@@ -495,7 +462,7 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
 }
 
 async function updatePlayerInventory(gameState, narrativeText) {
-    let prompt = fs.readFileSync('./prompt/update_player_inventory.txt', 'utf8');
+    let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_inventory.txt', 'utf8');
     spinner = await ora(translateTextTable.update_player_inventory).start();
     spinner.start();
     let args = {
@@ -533,7 +500,7 @@ async function updatePlayerInventory(gameState, narrativeText) {
 }
 
 async function updatePlayerStats(gameState, narrativeText) {
-    let prompt = fs.readFileSync('./prompt/update_player_data.txt', 'utf8');
+    let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_data.txt', 'utf8');
     spinner = await ora(translateTextTable.update_player_stats).start();
     spinner.start();
     
@@ -563,7 +530,7 @@ async function updatePlayerStats(gameState, narrativeText) {
 }
 
 async function updatePlayerQuest(gameState, narrativeText) {
-    let prompt = fs.readFileSync('./prompt/update_player_quest.txt', 'utf8');
+    let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_quest.txt', 'utf8');
     spinner = await ora(translateTextTable.update_player_quest).start();
     spinner.start();
     aiData = await aiFunction({
@@ -583,7 +550,7 @@ async function updatePlayerQuest(gameState, narrativeText) {
 }
 
 async function updatePlayerLocation(gameState, narrativeText) {
-    let prompt = fs.readFileSync('./prompt/update_player_location.txt', 'utf8');
+    let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_location.txt', 'utf8');
     spinner = await ora(translateTextTable.update_player_location).start();
     spinner.start();
     aiData = await aiFunction({
@@ -603,7 +570,6 @@ async function updatePlayerLocation(gameState, narrativeText) {
 }
 
 async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest = false) {
-    // Copy gameState to a new variable
     let newGameState = JSON.parse(JSON.stringify(gameState));
 
     if (narrativeTextRequest && narrativeTextRequest.needPlayerUpdate) {
@@ -653,7 +619,6 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
 
 
     return newGameState;
-    // narrativeTextRequest.needPlayerUpdate || narrativeTextRequest.needInventoryUpdate || narrativeTextRequest.needLocationUpdate || narrativeTextRequest.needQuestUpdate
 }
 
 async function main() {
@@ -745,11 +710,10 @@ async function main() {
         },
     };
     
-    let startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
-
-    while (startInventoryUpdate.playerData.inventory.length == 0) {
+    let startInventoryUpdate;
+    do {
         startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
-    }
+    } while (startInventoryUpdate.playerData.inventory.length === 0);
     await showNewItemsAndStats(startInventoryUpdate, gameState);
     
     gameState = syncInventoryAndStats(startInventoryUpdate, gameState);
@@ -764,7 +728,6 @@ async function main() {
             currentChoice = gameState.current_choice;
             if (firstBoot) {
                 narrativeText = baseScenario;
-                console.log("\nNarrative: " + chalk.cyan(narrativeText));
             } else {
                 if (enableAIDebug) {
                     console.log(chalk.red(`[DEBUG] Data for narrative text: `) + chalk.green(`${JSON.stringify(gameState)}`));
@@ -846,7 +809,5 @@ async function main() {
     }
 
     rl.close();
-
-
 }
 main();

@@ -2,4 +2,4 @@ Generate a list of coherent text-based adventure choices based on the narrative 
 Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
 Refer to the text_history list to understand the user's past decisions and maintain the continuity of the narrative.
 Use all playerData information to help to generate the choices.
-Generate a list of 1-5 (up to 10) choices, even if the user's action doesn't lead to a new decision point. Choices should be relevant and meaningful.
+Generate a list of 1-10 choices, even if the user's action doesn't lead to a new decision point. Choices should be relevant and meaningful.
