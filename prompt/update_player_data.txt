@@ -1,1 +1,2 @@
-Update player data according to the narrative text, for example, adjust the hp value after an "attack" action. Return the updated player data with these values: hp, max_hp, mana, max_mana, money, exp, next_level_exp, and level.
+Update player data according to the narrative text, for example, adjust the hp value after an "attack" action, ajust the money value after a "buy" or "sell" action, etc ...
+If the current quest is completed, give the player the reward and update the player data like money.

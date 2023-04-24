@@ -6,6 +6,8 @@ const fs = require('fs');
 
 let ora;
 
+let firstBoot = true;
+
 let translateTextTable = {
     error: 'Error',
     generating_class: 'Generating player classes...',
@@ -44,6 +46,10 @@ let translateTextTable = {
     update_inventory_stats: 'Updating player/inventory/location/quest data...',
     generate_game_scenario: 'Generating game scenario...',
     generate_possible_choices: 'Generating possible choices...',
+    update_player_inventory: 'Update player inventory...',
+    update_player_location: 'Update player location...',
+    update_player_quest: 'Update player quest...',
+    update_player_stats: 'Update player stats...',
 
 }
 
@@ -55,7 +61,7 @@ async function loadOra() {
 let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
+const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
 let choosenLanguage = '';
@@ -226,6 +232,7 @@ async function generateNarrativeText(gameState) {
         functionName: "generate_narrative_text",
         description: prompt,
         funcReturn: "dict[narrative_text:str, needPlayerUpdate:bool, needInventoryUpdate:bool, needLocationUpdate:bool, needQuestUpdate:bool, isGameOver:bool]",
+        // showDebug: enableDebug,
         showDebug: enableDebug,
         temperature: 0.8,
         presence_penalty: 0.6,
@@ -399,6 +406,9 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
 
     const newPlayer = updatedInventoryStats.playerData;
     const oldPlayer = gameState.playerData;
+
+    // if (enableAIDebug) console.log('newPlayer', JSON.stringify(newPlayer));
+    // if (enableAIDebug) console.log('oldPlayer', JSON.stringify(oldPlayer));
     if (newPlayer) {
         logIfChanged(oldPlayer.level, newPlayer.level, `>>> ${translateTextTable.player_level_change} ${newPlayer.level}`);
         logIfChanged(oldPlayer.hp, newPlayer.hp, `>>> ${translateTextTable.player_hp_change} ${newPlayer.hp}/${oldPlayer.max_hp}`, translateTextTable.player_interface_value_change + `: ${newPlayer.hp - oldPlayer.hp}`);
@@ -425,7 +435,8 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
         logIfChanged(oldQuest.quest_name, newQuest.quest_name, `>>> ${translateTextTable.player_new_quest} ${newQuest.quest_name}`);
         logIfChanged(oldQuest.quest_description, newQuest.quest_description, `>>> Quest Description: ${newQuest.quest_description}`);
         logIfChanged(oldQuest.quest_status, newQuest.quest_status, `>>> Quest Status: ${newQuest.quest_status}`);
-        logIfChanged(oldQuest.quest_progress, newQuest.quest_progress, `>>> Quest Progress: ${newQuest.quest_progress}`);
+        logIfChanged(oldQuest.quest_current_step, newQuest.quest_current_step, `>>> Quest Current Step: ${newQuest.quest_current_step}`);
+        logIfChanged(oldQuest.quest_total_step, newQuest.quest_total_step, `>>> Quest Step Total: ${newQuest.quest_total_step}`);
         logIfChanged(oldQuest.quest_reward, newQuest.quest_reward, `>>> Quest Reward: ${newQuest.quest_reward}`);
     }
     if (updatedInventoryStats.playerData && updatedInventoryStats.playerData.inventory) {
@@ -485,7 +496,7 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
 
 async function updatePlayerInventory(gameState, narrativeText) {
     let prompt = fs.readFileSync('./prompt/update_player_inventory.txt', 'utf8');
-    spinner = await ora('Update player inventory...').start();
+    spinner = await ora(translateTextTable.update_player_inventory).start();
     spinner.start();
     let args = {
         inventory: gameState.playerData.inventory,
@@ -506,6 +517,8 @@ async function updatePlayerInventory(gameState, narrativeText) {
         Don't return an empty list or null.
 				`;
         args.playerData = gameState.playerData;
+    } else {
+        prompt += `\nVERY IMPORTANT: Return an empty inventory if nothing changed from the input inventory.`;
     }
     aiData = await aiFunction({
         args: args,
@@ -521,7 +534,7 @@ async function updatePlayerInventory(gameState, narrativeText) {
 
 async function updatePlayerStats(gameState, narrativeText) {
     let prompt = fs.readFileSync('./prompt/update_player_data.txt', 'utf8');
-    spinner = await ora('Update player stats...').start();
+    spinner = await ora(translateTextTable.update_player_stats).start();
     spinner.start();
     
     aiData = await aiFunction({
@@ -551,7 +564,7 @@ async function updatePlayerStats(gameState, narrativeText) {
 
 async function updatePlayerQuest(gameState, narrativeText) {
     let prompt = fs.readFileSync('./prompt/update_player_quest.txt', 'utf8');
-    spinner = await ora('Update player quest...').start();
+    spinner = await ora(translateTextTable.update_player_quest).start();
     spinner.start();
     aiData = await aiFunction({
         args: {
@@ -561,7 +574,7 @@ async function updatePlayerQuest(gameState, narrativeText) {
         },
         functionName: "update_player_quest",
         description: prompt,
-        funcReturn: "dict[quest_name: str, quest_description: str, quest_status: str, quest_progress: int, quest_reward: str]",
+        funcReturn: "dict[quest_name: str, quest_description: str, quest_status: str, quest_current_step: int, quest_total_step: int, quest_reward: str]",
         showDebug: enableDebug,
         temperature: 0.7,
     });
@@ -571,7 +584,7 @@ async function updatePlayerQuest(gameState, narrativeText) {
 
 async function updatePlayerLocation(gameState, narrativeText) {
     let prompt = fs.readFileSync('./prompt/update_player_location.txt', 'utf8');
-    spinner = await ora('Update player location...').start();
+    spinner = await ora(translateTextTable.update_player_location).start();
     spinner.start();
     aiData = await aiFunction({
         args: {
@@ -590,7 +603,8 @@ async function updatePlayerLocation(gameState, narrativeText) {
 }
 
 async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest = false) {
-    let newGameState = gameState;
+    // Copy gameState to a new variable
+    let newGameState = JSON.parse(JSON.stringify(gameState));
 
     if (narrativeTextRequest && narrativeTextRequest.needPlayerUpdate) {
         const debugPlayerData = {
@@ -633,7 +647,7 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
     if (narrativeTextRequest === false || narrativeTextRequest.needInventoryUpdate) {
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Send inventory data for update: `) + chalk.green(`${JSON.stringify(gameState.playerData.inventory)}`));
         let testInventoryUpdate = await updatePlayerInventory(newGameState, narrativeText);
-        newGameState.playerData.inventory = testInventoryUpdate;
+        if (testInventoryUpdate.length > 0) newGameState.playerData.inventory = testInventoryUpdate;
         if (enableAIDebug) console.log(chalk.red(`[DEBUG] Got inventory data from update: `) + chalk.green(`${JSON.stringify(testInventoryUpdate)}`));
     }
 
@@ -693,10 +707,7 @@ async function main() {
     console.log(chalk.green(`\nScenario: `) + chalk.yellow(`${baseScenario}`) + `\n`);
     gameState = {
         text_history: [],
-        current_choice: {
-            "narrative_text": baseScenario,
-            "user_choice": translateTextTable.player_start_game,
-        },
+        current_choice: null,
         playerData: {
             hp: player.hp,
             max_hp: player.max_hp,
@@ -722,7 +733,8 @@ async function main() {
                 "quest_name": "No Quest",
                 "quest_description": "Find a quest to start your adventure !",
                 "quest_status": "Not Started",
-                "quest_progress": "",
+                "quest_total_step": 1,
+                "quest_current_step": 1,
                 "quest_reward": ""
             }
         },
@@ -734,6 +746,10 @@ async function main() {
     };
     
     let startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
+
+    while (startInventoryUpdate.playerData.inventory.length == 0) {
+        startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
+    }
     await showNewItemsAndStats(startInventoryUpdate, gameState);
     
     gameState = syncInventoryAndStats(startInventoryUpdate, gameState);
@@ -742,25 +758,32 @@ async function main() {
         let currentChoice;
         let updatedInventoryStats;
         let narrativeText;
-        let updateInventory;
+        let updateInventory = false;
         let gameOver;
         try {
-            let description = prompt;
             currentChoice = gameState.current_choice;
-            const narrativeTextRequest = await generateNarrativeText(gameState);
-            narrativeText = narrativeTextRequest.narrative_text;
-            gameOver = narrativeTextRequest.game_over;
-            if (enableAIDebug) {
-                console.log(chalk.red(`[DEBUG] Narrative text: `) + chalk.green(`${JSON.stringify(narrativeTextRequest)}`));
-            }
-            console.log("\nNarrative: " + chalk.cyan(narrativeText));
-            updateInventory = narrativeTextRequest.needPlayerUpdate || narrativeTextRequest.needInventoryUpdate || narrativeTextRequest.needLocationUpdate || narrativeTextRequest.needQuestUpdate || (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0);
-            if (updateInventory) {
-                updatedInventoryStats = await updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest);
+            if (firstBoot) {
+                narrativeText = baseScenario;
+                console.log("\nNarrative: " + chalk.cyan(narrativeText));
             } else {
-                if (enableAIDebug) console.log(chalk.red(`[DEBUG] No need to update inventory and stats`));
+                if (enableAIDebug) {
+                    console.log(chalk.red(`[DEBUG] Data for narrative text: `) + chalk.green(`${JSON.stringify(gameState)}`));
+                }
+                const narrativeTextRequest = await generateNarrativeText(gameState);
+                narrativeText = narrativeTextRequest.narrative_text;
+                gameOver = narrativeTextRequest.game_over;
+                if (enableAIDebug) {
+                    console.log(chalk.red(`[DEBUG] Narrative text: `) + chalk.green(`${JSON.stringify(narrativeTextRequest)}`));
+                }
+                console.log("\nNarrative: " + chalk.cyan(narrativeText));
+                updateInventory = narrativeTextRequest.needPlayerUpdate || narrativeTextRequest.needInventoryUpdate || narrativeTextRequest.needLocationUpdate || narrativeTextRequest.needQuestUpdate || (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0);
+                if (updateInventory) {
+                    updatedInventoryStats = await updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest);
+                } else {
+                    if (enableAIDebug) console.log(chalk.red(`[DEBUG] No need to update inventory and stats`));
+                }
+                spinner.stop();
             }
-            spinner.stop();
 
 
         } catch (error) {
@@ -775,11 +798,13 @@ async function main() {
             }
             await showNewItemsAndStats(updatedInventoryStats, gameState);
         }
-		const acceptIAAnswer = await getUserInput(chalk.magenta(translateTextTable.accept_ia_answer + ' (y/n) '));
-		if (acceptIAAnswer.toLowerCase() != 'y') {
-            console.log(' ');
-			continue;
-		}
+        if (!firstBoot) {
+            const acceptIAAnswer = await getUserInput(chalk.magenta(translateTextTable.accept_ia_answer + ' (y/n) '));
+            if (acceptIAAnswer.toLowerCase() != 'y') {
+                console.log(' ');
+                continue;
+            }
+        }
 
         if (updateInventory) gameState = syncInventoryAndStats(updatedInventoryStats, gameState);
         
@@ -797,11 +822,12 @@ async function main() {
 
         console.log(' ');
     
-
-		gameState.text_history.push({
-			narrative_text: await shortenSentence(currentChoice.narrative_text),
-			user_choice: currentChoice.user_choice,
-		});
+        if (currentChoice) {
+            gameState.text_history.push({
+                narrative_text: await shortenSentence(currentChoice.narrative_text),
+                user_choice: currentChoice.user_choice,
+            });
+        }
 		
 
 		gameState.current_choice = {
@@ -812,6 +838,7 @@ async function main() {
         if (gameState.text_history.length > 4) {
             gameState.text_history.shift();
         }
+        if (firstBoot) firstBoot = false;
 
         if (gameOver) {
             break;

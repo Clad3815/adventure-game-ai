@@ -6,3 +6,5 @@ If a player is buying an item don't add it to the inventory until the purchase i
 Give the player the reward when they complete a quest not when they accept it.
 If a item is renamed, delete the old item and add the new one to the inventory and change the data accordly to new information
 If a player get new information about a item from inventory, update the item data in the response.
+If the current quest is completed, give the player the reward if it's not money.
+Don't give any item for money as it's not managed by the inventory.
