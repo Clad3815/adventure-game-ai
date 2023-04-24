@@ -6,6 +6,8 @@ Return the updated inventory in the response.
 Always use and update player location to keep trace of the user's progress in the game.
 Update the player's quest data when needed, including quest name, description, type, and reward.
 The response should contain these keys: "player" (with updated values).
-In the updated "player" data, include only these values: hp, max_hp, mana, max_mana, money, exp, level, location, quest, and inventory. 
+In the updated "player" data, include only these values: hp, max_hp, mana, max_mana, money, exp, next_level_exp, level, location, quest, and inventory. 
 If a player is buying an item don't add it to the inventory until the purchase is confirmed and update the money value.
 Give the player a reward when they complete a quest not when they accept it.
+If a player get new information about a item from inventory or quest, update the item data in the response.
+If a item is renamed, delete the old item and add the new one to the inventory and change the data accordly to new information

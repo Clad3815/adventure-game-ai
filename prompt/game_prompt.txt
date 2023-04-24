@@ -8,7 +8,7 @@ Update player data according to "current_choice", like adjusting hp after an att
 
 Use and update player location to track progress. Update the player's quest data when needed, including quest name, description, type, and reward.
 
-In the updated "player" data, include only: hp, max_hp, mana, max_mana, money, exp, level, location, quest, and inventory.
+In the updated "player" data, include only: hp, max_hp, mana, max_mana, money, exp, next_level_exp, level, location, quest, and inventory.
 
 Generate a list of 1-5 (up to 10) possible_choices, even if the user's action doesn't lead to a new decision point. Choices should be relevant and meaningful.
 

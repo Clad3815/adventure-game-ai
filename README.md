@@ -15,7 +15,8 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 ## Todo
 
 - [ ] Make multiple prompt instead of one large one to avoid confusion for `gpt3.5-turbo`
-
+- [ ] Manage each data individually to avoid confusion for `gpt3.5-turbo` (ex: `inventory` and `location`)
+- [ ] Rewrite every prompt to reduce token size
 
 ## Requirements
 
