@@ -21,7 +21,7 @@ async function loadOra() {
 let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
+const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
 let choosenLanguage = '';
@@ -452,49 +452,91 @@ function syncInventoryAndStats(updatedInventoryStats, gameState) {
 
     return gameState;
 }
+
+const printCategory = (categoryName, items) => {
+    console.log(chalk.bold(`\n######### ${categoryName} #########`));
+    items.forEach(item => console.log(chalk.green(`>>> ${item}`)));
+    console.log(chalk.bold(`############################${'#'.repeat(categoryName.length)}`));
+};
+
 async function showNewItemsAndStats(updatedInventoryStats, gameState) {
     const logIfChanged = (oldValue, newValue, message, calculationMessage = null) => {
         if (newValue && newValue != oldValue) {
             const outputMessage = calculationMessage ?
                 `${message} (${calculationMessage})` :
                 message;
-            console.log(chalk.green(outputMessage));
+            return chalk.green(outputMessage);
         }
+        return null;
     };
 
     const newPlayer = updatedInventoryStats.playerData;
     const oldPlayer = gameState.playerData;
+    const playerItems = [];
 
     if (newPlayer) {
-        logIfChanged(oldPlayer.level, newPlayer.level, `>>> ${translateTextTable.player_level_change} ${newPlayer.level}`);
-        logIfChanged(oldPlayer.hp, newPlayer.hp, `>>> ${translateTextTable.player_hp_change} ${newPlayer.hp}/${oldPlayer.max_hp}`, translateTextTable.player_interface_value_change + `: ${newPlayer.hp - oldPlayer.hp}`);
-        logIfChanged(oldPlayer.mana, newPlayer.mana, `>>> ${translateTextTable.player_mana_change} ${newPlayer.mana}/${oldPlayer.max_mana}`, translateTextTable.player_interface_value_change + `: ${newPlayer.mana - oldPlayer.mana}`);
-        logIfChanged(oldPlayer.exp, newPlayer.exp, `>>> ${translateTextTable.player_exp_change} ${newPlayer.exp}`, translateTextTable.player_interface_value_change + `: ${newPlayer.exp - oldPlayer.exp}`);
-        logIfChanged(oldPlayer.next_level_exp, newPlayer.next_level_exp, `>>> ${translateTextTable.player_next_level_exp_change} ${newPlayer.next_level_exp}`);
-        logIfChanged(oldPlayer.money, newPlayer.money, `>>> ${translateTextTable.player_money_change} ${newPlayer.money}`, translateTextTable.player_interface_value_change + `: ${newPlayer.money - oldPlayer.money}`);
+        [
+            logIfChanged(oldPlayer.level, newPlayer.level, `${translateTextTable.player_level_change} ${newPlayer.level}`),
+            logIfChanged(oldPlayer.hp, newPlayer.hp, `${translateTextTable.player_hp_change} ${newPlayer.hp}/${oldPlayer.max_hp}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.hp - oldPlayer.hp}`),
+            logIfChanged(oldPlayer.mana, newPlayer.mana, `${translateTextTable.player_mana_change} ${newPlayer.mana}/${oldPlayer.max_mana}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.mana - oldPlayer.mana}`),
+            logIfChanged(oldPlayer.exp, newPlayer.exp, `${translateTextTable.player_exp_change} ${newPlayer.exp}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.exp - oldPlayer.exp}`),
+            logIfChanged(oldPlayer.next_level_exp, newPlayer.next_level_exp, `${translateTextTable.player_next_level_exp_change} ${newPlayer.next_level_exp}`),
+            logIfChanged(oldPlayer.money, newPlayer.money, `${translateTextTable.player_money_change} ${newPlayer.money}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.money - oldPlayer.money}`)
+        ].forEach(item => {
+            if (item !== null) {
+                playerItems.push(item);
+            }
+        });
+    }
+
+    if (playerItems.length > 0) {
+        printCategory('Player', playerItems);
     }
 
     const newLocation = newPlayer.location;
     const oldLocation = oldPlayer.location;
+    const locationItems = [];
 
     if (newLocation) {
-        logIfChanged(oldLocation.location_name, newLocation.location_name, `>>> ${translateTextTable.player_location_change} ${newLocation.location_name}`);
-        logIfChanged(oldLocation.location_short_reason, newLocation.location_short_reason, `>>> ${translateTextTable.player_location_reason} ${newLocation.location_short_reason}`);
-        logIfChanged(oldLocation.location_type, newLocation.location_type, `>>> ${translateTextTable.player_location_type} ${newLocation.location_type}`);
-        logIfChanged(oldLocation.location_sub, newLocation.location_sub, `>>> ${translateTextTable.player_location_sublocation} ${newLocation.location_sub}`);
+        [
+            logIfChanged(oldLocation.location_name, newLocation.location_name, `${translateTextTable.player_location_change} ${newLocation.location_name}`),
+            logIfChanged(oldLocation.location_short_reason, newLocation.location_short_reason, `${translateTextTable.player_location_reason} ${newLocation.location_short_reason}`),
+            logIfChanged(oldLocation.location_type, newLocation.location_type, `${translateTextTable.player_location_type} ${newLocation.location_type}`),
+            logIfChanged(oldLocation.location_sub, newLocation.location_sub, `${translateTextTable.player_location_sublocation} ${newLocation.location_sub}`)
+        ].forEach(item => {
+            if (item !== null) {
+                locationItems.push(item);
+            }
+        });
+    }
+
+    if (locationItems.length > 0) {
+        printCategory('Location', locationItems);
     }
 
     const newQuest = newPlayer.quest;
     const oldQuest = oldPlayer.quest;
+    const questItems = [];
 
     if (newQuest) {
-        logIfChanged(oldQuest.quest_name, newQuest.quest_name, `>>> ${translateTextTable.player_new_quest} ${newQuest.quest_name}`);
-        logIfChanged(oldQuest.quest_description, newQuest.quest_description, `>>> ${translateTextTable.player_quest_description} ${newQuest.quest_description}`);
-        logIfChanged(oldQuest.quest_status, newQuest.quest_status, `>>> ${translateTextTable.player_quest_status} ${newQuest.quest_status}`);
-        logIfChanged(oldQuest.quest_current_step, newQuest.quest_current_step, `>>> ${translateTextTable.player_quest_current_step} ${newQuest.quest_current_step}`);
-        logIfChanged(oldQuest.quest_total_step, newQuest.quest_total_step, `>>> ${translateTextTable.player_quest_total_step} ${newQuest.quest_total_step}`);
-        logIfChanged(oldQuest.quest_reward, newQuest.quest_reward, `>>> ${translateTextTable.player_quest_reward} ${newQuest.quest_reward}`);
+        [
+            logIfChanged(oldQuest.quest_name, newQuest.quest_name, `${translateTextTable.player_new_quest} ${newQuest.quest_name}`),
+            logIfChanged(oldQuest.quest_description, newQuest.quest_description, `${translateTextTable.player_quest_description} ${newQuest.quest_description}`),
+            logIfChanged(oldQuest.quest_status, newQuest.quest_status, `${translateTextTable.player_quest_status} ${newQuest.quest_status}`),
+            logIfChanged(oldQuest.quest_current_step, newQuest.quest_current_step, `${translateTextTable.player_quest_current_step} ${newQuest.quest_current_step}`),
+            logIfChanged(oldQuest.quest_total_step, newQuest.quest_total_step, `${translateTextTable.player_quest_total_step} ${newQuest.quest_total_step}`),
+            logIfChanged(oldQuest.quest_reward, newQuest.quest_reward, `${translateTextTable.player_quest_reward} ${newQuest.quest_reward}`)
+        ].forEach(item => {
+            if (item !== null) {
+                questItems.push(item);
+            }
+        });
     }
+
+    if (questItems.length > 0) {
+        printCategory('Quest', questItems);
+    }
+
     if (updatedInventoryStats.playerData && updatedInventoryStats.playerData.inventory) {
         let newItems = [];
         let removedItems = [];
@@ -541,14 +583,20 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
                 });
             }
         }
-        if (newItems.length > 0) {
-            console.log(chalk.yellow(`>>> ${translateTextTable.player_new_item} `) + `${newItems.map(item => `${item.count} ${item.name}`).join(', ')}`);
-           }
-           if (removedItems.length > 0) {
-               console.log(chalk.red(`>>> ${translateTextTable.player_lost_item} `) + `${removedItems.map(item => `${item.count} ${item.name}`).join(', ')}`);
-           }
-       }
+
+        if (newItems.length > 0 || removedItems.length > 0) {
+            const inventoryItems = [];
+            if (newItems.length > 0) {
+                inventoryItems.push(chalk.yellow(`${translateTextTable.player_new_item} `) + `${newItems.map(item => `${item.count} ${item.name}`).join(', ')}`);
+            }
+            if (removedItems.length > 0) {
+                inventoryItems.push(chalk.red(`${translateTextTable.player_lost_item} `) + `${removedItems.map(item => `${item.count} ${item.name}`).join(', ')}`);
+            }
+            printCategory('Inventory', inventoryItems);
+        }
+    }
 }
+
 
 async function updatePlayerInventory(gameState, narrativeText) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_inventory.txt', 'utf8');
