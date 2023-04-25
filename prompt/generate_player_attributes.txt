@@ -1,7 +1,7 @@
-Generate random attributes (hp, max_hp, mana, max_mana, gold, attributes_list) for the player based on the game settings and the player class. 
+Generate random attributes (hp, max_hp, mana, max_mana, money, strength, intelligence, dexterity, constitution, special_attributes_list) for the player based on the game settings and the player class. 
 
 Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
-The specials attribute (attributes_list) must match the player class and game settings (1 up to 5).
-Example: {"hp": 100, "max_hp": 100, "mana": 50, "max_mana": 50, "gold": 10, "attributes_list": ["smart", "charming"]}
+The specials attribute (special_attributes_list) must match the player class and game settings (1 up to 5).
+Example: {"hp": 100, "max_hp": 100, "mana": 50, "max_mana": 50, "money": 10, "strength": 10, "intelligence": 10, "dexterity": 10, "constitution": 10, "special_attributes_list": ["smart", "charming"]}
 
 Pay attention to the player level and the game difficulty while generating the attributes.

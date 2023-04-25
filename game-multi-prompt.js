@@ -6,9 +6,12 @@ const path = require('path');
 
 let translateTextTable = require('./lang');
 
+
 let ora;
 
 let firstBoot = true;
+
+let gameState;
 
 async function loadOra() {
     ora = (await
@@ -18,7 +21,7 @@ async function loadOra() {
 let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
+const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
 let choosenLanguage = '';
@@ -55,20 +58,37 @@ async function TranslateMenuText(language) {
         // Load the translation from the file
         translateTextTable = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     } else {
-        // Translate the text and save it to a file
+        // Translate the text in chunks of 10 items and save it to a file
         spinner = await ora(translateTextTable.translating_text).start();
         spinner.start();
-        let aiData = await aiFunction({
-            args: {
-                data: translateTextTable,
-                to: language,
-            },
-            functionName: "translate_text",
-            description: `Generate a translate dict from the "data" dict value from one language to another. Use the "to" arguments to specify destination language. The text is from a game user interface.`,
-            funcReturn: "list[dict[index: str, value: str]]",
-            showDebug: enableDebug,
-            temperature: 0.3,
-        });
+
+        let translateTextTableKeys = Object.keys(translateTextTable);
+        let aiData = [];
+
+        for (let i = 0; i < translateTextTableKeys.length; i += 10) {
+            let chunk = {};
+
+            // Create a chunk of 10 items
+            for (let j = 0; j < 10 && i + j < translateTextTableKeys.length; j++) {
+                const key = translateTextTableKeys[i + j];
+                chunk[key] = translateTextTable[key];
+            }
+
+            // Translate the chunk
+            let chunkTranslation = await aiFunction({
+                args: {
+                    data: chunk,
+                    to: language,
+                },
+                functionName: "translate_text",
+                description: `Generate a translate dict from the "data" dict value from one language to another. Use the "to" arguments to specify destination language. The text is from a game user interface.`,
+                funcReturn: "list[dict[index: str, value: str]]",
+                showDebug: enableDebug,
+                temperature: 0.3,
+            });
+
+            aiData.push(...chunkTranslation);
+        }
 
         // Update the translateTextTable
         for (const [key, value] of Object.entries(aiData)) {
@@ -123,21 +143,48 @@ async function shortenSentence(sentence) {
     return aiData;
 }
 
+async function createSummaryTextHistory(gameState) {
+    if (gameState.gameTextHistory.length == 0) return;
+    if (enableAIDebug) console.log('[DEBUG] createSummaryTextHistory: ' + JSON.stringify(gameState.gameTextHistory));
+    spinner = await ora(translateTextTable.create_summary_text_history).start();
+    spinner.start();
+    let aiData = await aiFunction({
+        args: {
+            text_history: gameState.gameTextHistory,
+        },
+        functionName: "create_summary_text_history",
+        description: `Create a summary from a text history. The "text_history" argument contain a list of narrative_text with the player answer to the text. The goal is to summarize the history to a little text which explain all important point. The final text must contain maximum 100 words And must keep all important informations, the sentence need to be shortest possible the text is not designed to be display it's just a reminder for the AI. Example: 
+"Jack went to the market to buy a sword, after that he go back to home and sleep very well" to 
+"Jack go market buy sword, go home, sleep, etc ..."`,
+        funcReturn: "str",
+        // showDebug: true,
+        showDebug: enableDebug,
+        temperature: 1,
+    });
+    spinner.stop();
+    if (enableAIDebug) console.log('[DEBUG] createSummaryTextHistory DONE: ' + JSON.stringify(aiData));
+    gameState.story_summary = aiData;
+}
+
 async function initializePlayerAttributes(gameState, playerClass, playerSex, playerDescription) {
     let prompt = fs.readFileSync('./prompt/generate_player_attributes.txt', 'utf8');
+    let args = {
+        gameSettings: gameState.gameSettings,
+        playerDescription: playerDescription,
+        playerSex: playerSex,
+        playerClass: playerClass,
+        playerLevel: 1,
+    };
+    if (enableAIDebug) {
+        console.log(chalk.red(translateTextTable.debug_init_attribute_send + ` `) + chalk.green(`${JSON.stringify(args)}`));
+    }
     spinner = await ora(translateTextTable.init_player_attribute).start();
     spinner.start();
     aiData = await aiFunction({
-        args: {
-            gameSettings: gameState.gameSettings,
-            playerDescription: playerDescription,
-            playerSex: playerSex,
-            playerClass: playerClass,
-            playerLevel: 1,
-        },
+        args: args,
         functionName: "generate_player_attribut",
         description: prompt,
-        funcReturn: "dict[hp, max_hp, mana, max_mana, money, attributes_list]",
+        funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, strength: int, intelligence: int, dexterity: int, constitution: int, special_attributes_list: list[str]]",
         showDebug: enableDebug,
         autoConvertReturn: true,
         temperature: 0.7,
@@ -148,6 +195,9 @@ async function initializePlayerAttributes(gameState, playerClass, playerSex, pla
         console.log(chalk.red(`${translateTextTable.error}: ${aiData}`));
         console.log(chalk.red(`####################`));
         return [];
+    }
+    if (enableAIDebug) {
+        console.log(chalk.red(translateTextTable.debug_init_attribute_received + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
     }
 
     return aiData;
@@ -180,36 +230,69 @@ async function generateValidClass(gameState, playerDescription, playerSex) {
     }
     return aiData;
 }
-
-async function getValidClass(validClasses) {
+async function getValidClass(gameState, description, playerSex) {
     let playerClass;
-    do {
-        playerClass = await getUserInput(translateTextTable.choose_player_class + ' (' + validClasses.join(', ') + ')', false, validClasses[0]);
-    } while (!validClasses.includes(playerClass));
+    let playerClassIndex;
+    let validClasses = await generateValidClass(gameState, description, playerSex);
+    let userInput;
+    while (true) {
+        console.log(translateTextTable.choose_player_class);
+        validClasses.forEach((className, index) => {
+            console.log(`${index + 1}: ${className}`);
+        });
+        console.log(`${validClasses.length + 1}: ${translateTextTable.regenerate_class}`);
+        userInput = await getUserInput(translateTextTable.choose_number);
+
+        playerClassIndex = parseInt(userInput, 10) - 1;
+        if (userInput.trim() === '' || isNaN(playerClassIndex)) {
+            console.log(translateTextTable.invalid_input);
+            continue;
+        }
+
+        if (playerClassIndex === validClasses.length) {
+            validClasses = await generateValidClass(gameState, description, playerSex);
+        } else if (playerClassIndex >= 0 && playerClassIndex < validClasses.length) {
+            playerClass = validClasses[playerClassIndex];
+            break;
+        } else {
+            console.log(translateTextTable.invalid_input);
+        }
+    }
 
     return playerClass;
 }
 
 async function generateNarrativeText(gameState) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/get_narrative_text.txt', 'utf8');
+    let args = {
+        // text_history: gameState.text_history,
+        story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
+        gameSettings: gameState.gameSettings,
+        playerData: gameState.playerData,
+        previous_choice: {
+            previous_narrative_text: gameState.current_choice.narrative_text,
+            previous_user_choice: gameState.current_choice.user_choice,
+        },
+    };
+    if (enableAIDebug) {
+        console.log(chalk.red(translateTextTable.debug_narrive_text_send + ` `) + chalk.green(`${JSON.stringify(args)}`));
+    }
     spinner = await ora(translateTextTable.get_narrative_text).start();
     spinner.start();
     aiData = await aiFunction({
-        args: {
-            current_choice: gameState.current_choice,
-            text_history: gameState.text_history,
-            playerData: gameState.playerData,
-            gameSettings: gameState.gameSettings,
-        },
+        args: args,
         functionName: "generate_narrative_text",
         description: prompt,
-        funcReturn: "dict[narrative_text:str, needPlayerUpdate:bool, needInventoryUpdate:bool, needLocationUpdate:bool, needQuestUpdate:bool, isGameOver:bool]",
-        // showDebug: enableDebug,
+        funcReturn: "dict[next_narrative_text:str, needPlayerUpdate:bool, needInventoryUpdate:bool, needLocationUpdate:bool, needQuestUpdate:bool, isGameOver:bool]",
+        // showDebug: true,
         showDebug: enableDebug,
         temperature: 0.8,
         presence_penalty: 0.6,
     });
     spinner.stop();
+    if (enableAIDebug) {
+        console.log(chalk.red(translateTextTable.debug_narrive_text_received + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
+    }
     return aiData;
 }
 
@@ -264,7 +347,7 @@ async function generateGameScenario(gameState, player, playerScenario) {
                 playerData: {
                     username: player.username,
                     description: player.description,
-                    attributes: player.attributes_list,
+                    special_attributes: player.special_attributes_list,
                     class: player.class,
                     sex: player.sex,
                     level: 1
@@ -275,7 +358,9 @@ async function generateGameScenario(gameState, player, playerScenario) {
             description: `Generate a coherent text-based adventure game starting scenario for the player using the main idea, use the player level to determine the scenario. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario will be the start of the game, it's must be entertaining and coherent.`,
             funcReturn: "str",
             showDebug: enableDebug,
-            temperature: 0.7,
+            temperature: 1,
+            presence_penalty: 0.6,
+            frequency_penalty: 0.6,
         });
         spinner.stop();
     } else {
@@ -287,7 +372,7 @@ async function generateGameScenario(gameState, player, playerScenario) {
                 playerData: {
                     username: player.username,
                     description: player.description,
-                    attributes: player.attributes_list,
+                    special_attributes: player.special_attributes_list,
                     class: player.class,
                     sex: player.sex
                 }
@@ -297,6 +382,8 @@ async function generateGameScenario(gameState, player, playerScenario) {
             funcReturn: "str",
             showDebug: enableDebug,
             temperature: 0.7,
+            presence_penalty: 0.6,
+            frequency_penalty: 0.6,
         });
         spinner.stop();
     }
@@ -317,7 +404,9 @@ async function generatePossibleChoices(gameState, narrativeText) {
         description: prompt,
         funcReturn: "list[str]",
         showDebug: enableDebug,
-        temperature: 0.8,
+        temperature: 1,
+        presence_penalty: 0.6,
+        frequency_penalty: 0.6,
     });
     spinner.stop();
     return aiData;
@@ -390,9 +479,9 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
 
     if (newLocation) {
         logIfChanged(oldLocation.location_name, newLocation.location_name, `>>> ${translateTextTable.player_location_change} ${newLocation.location_name}`);
-        logIfChanged(oldLocation.location_short_reason, newLocation.location_short_reason, `>>> Location Reason: ${newLocation.location_short_reason}`);
-        logIfChanged(oldLocation.location_type, newLocation.location_type, `>>> Location Type: ${newLocation.location_type}`);
-        logIfChanged(oldLocation.location_sub, newLocation.location_sub, `>>> Location Sublocation: ${newLocation.location_sub}`);
+        logIfChanged(oldLocation.location_short_reason, newLocation.location_short_reason, `>>> ${translateTextTable.player_location_reason} ${newLocation.location_short_reason}`);
+        logIfChanged(oldLocation.location_type, newLocation.location_type, `>>> ${translateTextTable.player_location_type} ${newLocation.location_type}`);
+        logIfChanged(oldLocation.location_sub, newLocation.location_sub, `>>> ${translateTextTable.player_location_sublocation} ${newLocation.location_sub}`);
     }
 
     const newQuest = newPlayer.quest;
@@ -400,11 +489,11 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
 
     if (newQuest) {
         logIfChanged(oldQuest.quest_name, newQuest.quest_name, `>>> ${translateTextTable.player_new_quest} ${newQuest.quest_name}`);
-        logIfChanged(oldQuest.quest_description, newQuest.quest_description, `>>> Quest Description: ${newQuest.quest_description}`);
-        logIfChanged(oldQuest.quest_status, newQuest.quest_status, `>>> Quest Status: ${newQuest.quest_status}`);
-        logIfChanged(oldQuest.quest_current_step, newQuest.quest_current_step, `>>> Quest Current Step: ${newQuest.quest_current_step}`);
-        logIfChanged(oldQuest.quest_total_step, newQuest.quest_total_step, `>>> Quest Step Total: ${newQuest.quest_total_step}`);
-        logIfChanged(oldQuest.quest_reward, newQuest.quest_reward, `>>> Quest Reward: ${newQuest.quest_reward}`);
+        logIfChanged(oldQuest.quest_description, newQuest.quest_description, `>>> ${translateTextTable.player_quest_description} ${newQuest.quest_description}`);
+        logIfChanged(oldQuest.quest_status, newQuest.quest_status, `>>> ${translateTextTable.player_quest_status} ${newQuest.quest_status}`);
+        logIfChanged(oldQuest.quest_current_step, newQuest.quest_current_step, `>>> ${translateTextTable.player_quest_current_step} ${newQuest.quest_current_step}`);
+        logIfChanged(oldQuest.quest_total_step, newQuest.quest_total_step, `>>> ${translateTextTable.player_quest_total_step} ${newQuest.quest_total_step}`);
+        logIfChanged(oldQuest.quest_reward, newQuest.quest_reward, `>>> ${translateTextTable.player_quest_reward} ${newQuest.quest_reward}`);
     }
     if (updatedInventoryStats.playerData && updatedInventoryStats.playerData.inventory) {
         let newItems = [];
@@ -456,7 +545,7 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
             console.log(chalk.yellow(`>>> ${translateTextTable.player_new_item} `) + `${newItems.map(item => `${item.count} ${item.name}`).join(', ')}`);
            }
            if (removedItems.length > 0) {
-               console.log(chalk.red(`>>> ${translateTextTable.player_lost_item}`) + `${removedItems.map(item => `${item.count} ${item.name}`).join(', ')}`);
+               console.log(chalk.red(`>>> ${translateTextTable.player_lost_item} `) + `${removedItems.map(item => `${item.count} ${item.name}`).join(', ')}`);
            }
        }
 }
@@ -583,7 +672,7 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
             level: gameState.playerData.level,
             next_level_exp: gameState.playerData.next_level_exp,
         };
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Send stats data for update: `) + chalk.green(`${JSON.stringify(debugPlayerData)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_stats_data_update + ` `) + chalk.green(`${JSON.stringify(debugPlayerData)}`));
         let testPlayerUpdate = await updatePlayerStats(newGameState, narrativeText);
         newGameState.playerData.hp = testPlayerUpdate.hp;
         newGameState.playerData.max_hp = testPlayerUpdate.max_hp;
@@ -593,130 +682,192 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
         newGameState.playerData.exp = testPlayerUpdate.exp;
         newGameState.playerData.level = testPlayerUpdate.level;
         newGameState.playerData.next_level_exp = testPlayerUpdate.next_level_exp;
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Got stats data from update: `) + chalk.green(`${JSON.stringify(testPlayerUpdate)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_stats_data_updated  + ` `) + chalk.green(`${JSON.stringify(testPlayerUpdate)}`));
     }
 
     if (narrativeTextRequest === false || narrativeTextRequest.needLocationUpdate) {
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Send location data for update: `) + chalk.green(`${JSON.stringify(gameState.playerData.location)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_location_data_update  + ` `) + chalk.green(`${JSON.stringify(gameState.playerData.location)}`));
         let testLocationUpdate = await updatePlayerLocation(newGameState, narrativeText);
         newGameState.playerData.location = testLocationUpdate;
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Got location data from update: `) + chalk.green(`${JSON.stringify(testLocationUpdate)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_location_data_updated  + ` `) + chalk.green(`${JSON.stringify(testLocationUpdate)}`));
     }
     
     if (narrativeTextRequest === false || narrativeTextRequest.needQuestUpdate) {
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Send quest data for update: `) + chalk.green(`${JSON.stringify(gameState.playerData.quest)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_quest_data_update  + ` `) + chalk.green(`${JSON.stringify(gameState.playerData.quest)}`));
         let testQuestUpdate = await updatePlayerQuest(newGameState, narrativeText);
         newGameState.playerData.quest = testQuestUpdate;
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Got quest data from update: `) + chalk.green(`${JSON.stringify(testQuestUpdate)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_quest_data_updated  + ` `) + chalk.green(`${JSON.stringify(testQuestUpdate)}`));
     }
 
     if (narrativeTextRequest === false || narrativeTextRequest.needInventoryUpdate) {
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Send inventory data for update: `) + chalk.green(`${JSON.stringify(gameState.playerData.inventory)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_update + ` `) + chalk.green(`${JSON.stringify(gameState.playerData.inventory)}`));
         let testInventoryUpdate = await updatePlayerInventory(newGameState, narrativeText);
         if (testInventoryUpdate.length > 0) newGameState.playerData.inventory = testInventoryUpdate;
-        if (enableAIDebug) console.log(chalk.red(`[DEBUG] Got inventory data from update: `) + chalk.green(`${JSON.stringify(testInventoryUpdate)}`));
+        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_updated  + ` `) + chalk.green(`${JSON.stringify(testInventoryUpdate)}`));
     }
 
 
     return newGameState;
 }
 
+async function saveGame(gameState) {
+    fs.writeFileSync('./game_save.json', JSON.stringify(gameState));
+    if (enableAIDebug) console.log(chalk.green(translateTextTable.game_saved));
+}
+async function loadGame() {
+    if (fs.existsSync('./game_save.json')) {
+        const savedData = fs.readFileSync('./game_save.json', 'utf8');
+        return JSON.parse(savedData);
+    } else {
+        return null;
+    }
+}
+
+function displaySaveInfo(savedGameState) {
+    console.log(chalk.yellow('Save Information:'));
+    console.log('###############################################');
+    console.log(chalk.yellow('  Game Settings:'), JSON.stringify(savedGameState.gameSettings));
+    console.log(chalk.yellow('  Player Name:'), savedGameState.playerData.username);
+    console.log(chalk.yellow('  Player Description:'), savedGameState.playerData.description);
+    console.log(chalk.yellow('  Story Summary:'), savedGameState.story_summary);
+
+    // Last player choice
+    console.log('###############################################');
+    console.log(chalk.yellow('  Last Player Choice:'));
+    console.log(chalk.yellow('    Narrative:'), savedGameState.current_choice.narrative_text);
+    console.log(chalk.yellow('    Choice:'), savedGameState.current_choice.user_choice);
+    console.log('###############################################');
+    console.log(' ');
+}
+
 async function main() {
     await loadOra();
     spinner = await ora(translateTextTable.loading_message).start();
-    spinner.stop(); 
+    spinner.stop();
     console.log(chalk.red(`############################`));
     console.log(chalk.red(`## Generate Your Own Game ##`));
     console.log(chalk.red(`############################`));
-    let prompt = fs.readFileSync('./prompt/game_prompt.txt', 'utf8');
-    const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', false, 'en');
-    if (gameLanguage != 'en') 
-    {
-        const translateMenuAsk = await getUserInput('Do you want to translate the menu of the game? (y/n)', false, 'n');
-        translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
-        if (translateMenu) await TranslateMenuText(gameLanguage);
+
+    const savedGameState = await loadGame();
+    let loadSavedGame = false;
+
+    if (savedGameState) {
+        displaySaveInfo(savedGameState);
+        const loadSaveQuestion = await getUserInput(translateTextTable.load_save_question + ' (y/n)', false, 'n');
+        loadSavedGame = (loadSaveQuestion == 'yes' || loadSaveQuestion == 'y') ? true : false;
     }
-    choosenLanguage = gameLanguage;
-    const username = await getUserInput(translateTextTable.choose_player_username, false, 'Jack');
-    const gameEnvironment = await getUserInput(translateTextTable.choose_game_environment, false, translateTextTable.choose_game_environment_default);
-    const playerScenario = await getUserInput(translateTextTable.choose_player_scenario, false, '');
-    const gameDifficulty = await getUserInput(translateTextTable.choose_game_difficulty, false, translateTextTable.choose_game_difficulty_default);
-    const playerSex = await getUserInput(translateTextTable.choose_player_sex, false, translateTextTable.choose_player_sex_default);
-    const description = await getUserInput(translateTextTable.choose_player_description, false, translateTextTable.choose_player_description_default);
 
-    let player;
-    let Welcome = `\n${translateTextTable.welcome_game} `.replace('[username]', username);
-    console.log(chalk.green(Welcome));
-
-    let gameState = {
-        gameSettings: {
-            gameEnvironment: gameEnvironment,
-            gameDifficulty: gameDifficulty,
-            gameLanguage: gameLanguage
-        },
-    };
-
-    possible_classes = await generateValidClass(gameState, description, playerSex);
-    const playerClass = await getValidClass(possible_classes);
-    player = {
-        username,
-        class: playerClass,
-        sex: playerSex,
-        playerDescription: description,
-        ...await initializePlayerAttributes(gameState, playerClass, playerSex, description),
-    };
-    let baseScenario;
-
-    baseScenario = await generateGameScenario(gameState, player, playerScenario);
-
-    console.log(chalk.green(`\nScenario: `) + chalk.yellow(`${baseScenario}`) + `\n`);
-    gameState = {
-        text_history: [],
-        current_choice: null,
-        playerData: {
-            hp: player.hp,
-            max_hp: player.max_hp,
-            money: player.money,
-            mana: player.mana,
-            max_mana: player.max_mana,
-            exp: 0,
-            next_level_exp: 100,
-            level: 1,
-            class: player.class,
-            sex: player.sex,
-            username: player.username,
-            description: player.playerDescription,
-            attributes: player.attributes_list,
-            inventory: [],
-            location: {
-                "location_name": "",
-                "location_short_reason": "",
-                "location_type": "",
-                "location_sub": "",
+    if (loadSavedGame) {
+        gameState = savedGameState;
+        if (gameState.gameSettings.gameLanguage != 'en') {
+            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question + ' (y/n)', false, 'n');
+            translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
+            if (translateMenu) await TranslateMenuText(gameState.gameSettings.gameLanguage);
+        }
+        choosenLanguage = gameState.gameSettings.gameLanguage;
+        firstBoot = false;
+    } else {
+        let prompt = fs.readFileSync('./prompt/game_prompt.txt', 'utf8');
+        const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', false, 'en');
+        if (gameLanguage != 'en') 
+        {
+            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question  + ' (y/n)', false, 'n');
+            translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
+            if (translateMenu) await TranslateMenuText(gameLanguage);
+        }
+        choosenLanguage = gameLanguage;
+        const username = await getUserInput(translateTextTable.choose_player_username, false, 'Jack');
+        const gameEnvironment = await getUserInput(translateTextTable.choose_game_environment, false, translateTextTable.choose_game_environment_default);
+        const playerScenario = await getUserInput(translateTextTable.choose_player_scenario, false, '');
+        const gameDifficulty = await getUserInput(translateTextTable.choose_game_difficulty, false, translateTextTable.choose_game_difficulty_default);
+        const playerSex = await getUserInput(translateTextTable.choose_player_sex, false, translateTextTable.choose_player_sex_default);
+        const description = await getUserInput(translateTextTable.choose_player_description, false, translateTextTable.choose_player_description_default);
+    
+        let player;
+        let Welcome = `\n${translateTextTable.welcome_game} `.replace('[username]', username);
+        console.log(chalk.green(Welcome));
+    
+        gameState = {
+            gameTextHistory: [],
+            current_choice: null,
+            gameSettings: {
+                gameEnvironment: gameEnvironment,
+                gameDifficulty: gameDifficulty,
+                gameLanguage: gameLanguage
             },
-            quest: {
-                "quest_name": "No Quest",
-                "quest_description": "Find a quest to start your adventure !",
-                "quest_status": "Not Started",
-                "quest_total_step": 1,
-                "quest_current_step": 1,
-                "quest_reward": ""
-            }
-        },
-        gameSettings: {
-            gameEnvironment: gameEnvironment,
-            gameDifficulty: gameDifficulty,
-            gameLanguage: gameLanguage
-        },
-    };
+        };
     
-    let startInventoryUpdate;
-    do {
-        startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
-    } while (startInventoryUpdate.playerData.inventory.length === 0);
-    await showNewItemsAndStats(startInventoryUpdate, gameState);
+        const playerClass = await getValidClass(gameState, description, playerSex);
     
-    gameState = syncInventoryAndStats(startInventoryUpdate, gameState);
+        player = {
+            username,
+            class: playerClass,
+            sex: playerSex,
+            playerDescription: description,
+            ...await initializePlayerAttributes(gameState, playerClass, playerSex, description),
+        };
+        let baseScenario;
+    
+        baseScenario = await generateGameScenario(gameState, player, playerScenario);
+    
+        console.log(chalk.green(`\n${translateTextTable.scenario_title}: `) + chalk.blue(`${baseScenario}`) + `\n`);
+        gameState = {
+            gameTextHistory: [],
+            story_summary: baseScenario,
+            current_choice: null,
+            playerData: {
+                hp: player.hp,
+                max_hp: player.max_hp,
+                money: player.money,
+                mana: player.mana,
+                max_mana: player.max_mana,
+                exp: 0,
+                next_level_exp: 100,
+                level: 1,
+                class: player.class,
+                sex: player.sex,
+                username: player.username,
+                description: player.playerDescription,
+                attributes: [
+                    { name: "strength", value: player.strength },
+                    { name: "dexterity", value: player.dexterity },
+                    { name: "constitution", value: player.constitution },
+                    { name: "intelligence", value: player.intelligence },
+                ],
+                special_attributes: player.special_attributes_list,
+                inventory: [],
+                location: {
+                    "location_name": "",
+                    "location_short_reason": "",
+                    "location_type": "",
+                    "location_sub": "",
+                },
+                quest: {
+                    "quest_name": "No Quest",
+                    "quest_description": "Find a quest to start your adventure !",
+                    "quest_status": "Not Started",
+                    "quest_total_step": 1,
+                    "quest_current_step": 1,
+                    "quest_reward": ""
+                }
+            },
+            gameSettings: {
+                gameEnvironment: gameEnvironment,
+                gameDifficulty: gameDifficulty,
+                gameLanguage: gameLanguage
+            },
+        };
+        
+        let startInventoryUpdate;
+        do {
+            startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
+        } while (startInventoryUpdate.playerData.inventory.length === 0);
+        await showNewItemsAndStats(startInventoryUpdate, gameState);
+        
+        gameState = syncInventoryAndStats(startInventoryUpdate, gameState);
+    }
+
+
 
     while (true) {
         let currentChoice;
@@ -729,21 +880,15 @@ async function main() {
             if (firstBoot) {
                 narrativeText = baseScenario;
             } else {
-                if (enableAIDebug) {
-                    console.log(chalk.red(`[DEBUG] Data for narrative text: `) + chalk.green(`${JSON.stringify(gameState)}`));
-                }
                 const narrativeTextRequest = await generateNarrativeText(gameState);
-                narrativeText = narrativeTextRequest.narrative_text;
+                narrativeText = narrativeTextRequest.next_narrative_text;
                 gameOver = narrativeTextRequest.game_over;
-                if (enableAIDebug) {
-                    console.log(chalk.red(`[DEBUG] Narrative text: `) + chalk.green(`${JSON.stringify(narrativeTextRequest)}`));
-                }
-                console.log("\nNarrative: " + chalk.cyan(narrativeText));
+                console.log(`\n${translateTextTable.scenario_narrative} ` + chalk.cyan(narrativeText));
                 updateInventory = narrativeTextRequest.needPlayerUpdate || narrativeTextRequest.needInventoryUpdate || narrativeTextRequest.needLocationUpdate || narrativeTextRequest.needQuestUpdate || (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0);
                 if (updateInventory) {
                     updatedInventoryStats = await updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest);
                 } else {
-                    if (enableAIDebug) console.log(chalk.red(`[DEBUG] No need to update inventory and stats`));
+                    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_dont_need_update_player));
                 }
                 spinner.stop();
             }
@@ -752,11 +897,12 @@ async function main() {
         } catch (error) {
             spinner.stop(); 
             console.log(error);
-            continue;
+            // Exit the game
+            process.exit();
         }
         if (updateInventory) {
             if (!updatedInventoryStats.playerData || !updatedInventoryStats.playerData.inventory || !updatedInventoryStats.playerData.inventory[0] || !updatedInventoryStats.playerData.inventory[0].name) {
-                if (enableAIDebug) console.log(chalk.red(`[DEBUG] Incorrect player data, re-generating ...`));
+                if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_incorrect_player_data_regenerate));
                 continue;
             }
             await showNewItemsAndStats(updatedInventoryStats, gameState);
@@ -773,21 +919,23 @@ async function main() {
         
         const possibleChoices = await generatePossibleChoices(gameState, narrativeText);
         let userInput;
-        if (possibleChoices.length > 0) {
+        // Check if possible choices is an object or an array
+        if (possibleChoices && (Array.isArray(possibleChoices) || typeof possibleChoices === 'object') && possibleChoices.length > 0) {
             possibleChoices.forEach((choice, index) => {
                 console.log(chalk.yellow(`${index + 1}: ${choice}`));
             });
             userInput = await getUserInput(chalk.magenta(translateTextTable.select_player_action));
             userInput = userInput >= 1 && userInput <= possibleChoices.length ? possibleChoices[userInput - 1] : userInput;
         } else {
+            console.log(chalk.yellow(translateTextTable.no_possible_choice));
             userInput = await getUserInput(chalk.magenta(translateTextTable.select_player_action_custom));
         }
-
+        await createSummaryTextHistory(gameState);
         console.log(' ');
     
         if (currentChoice) {
-            gameState.text_history.push({
-                narrative_text: await shortenSentence(currentChoice.narrative_text),
+            gameState.gameTextHistory.push({
+                narrative_text: currentChoice.narrative_text,
                 user_choice: currentChoice.user_choice,
             });
         }
@@ -798,10 +946,11 @@ async function main() {
 			user_choice: userInput,
 		};
 
-        if (gameState.text_history.length > 4) {
-            gameState.text_history.shift();
+        if (gameState.gameTextHistory.length > 15) {
+            gameState.gameTextHistory.shift();
         }
         if (firstBoot) firstBoot = false;
+        await saveGame(gameState);
 
         if (gameOver) {
             break;

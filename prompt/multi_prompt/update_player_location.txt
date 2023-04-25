@@ -1,4 +1,5 @@
-Always use and update player location in the game world to keep track of the user's progress in the game. Use the narrative text to determine the player's location change. Return the updated location data including location name, location description, location type, and any other relevant information.
-Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
-"location_sub" is used to determine the room or area the player is in.
-"location_short_reason" must be a short description of the reason the player is in the location.
+Throughout the game, accurately detect and update the player's location in the game world based on the narrative text, keeping track of their progress. Whenever the narrative text describes a change in location, provide updated location data, including location_name, location_description, location_type, location_sub, and location_short_reason. Make sure to update every detail accurately based on the narrative text.
+
+Consistently use the gameSettings to tailor game aspects such as language (output text must match the selected language), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
+
+When updating the player's location, pay close attention to all location variables, including location_sub, which represents the specific room or area the player is in. The location_short_reason variable should offer a brief explanation for the player's presence in the location. Update the location information whenever the narrative text signals a change in location, ensuring that every detail is accurate and up-to-date.

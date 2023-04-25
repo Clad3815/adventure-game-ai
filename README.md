@@ -6,18 +6,23 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 
 ## Features
 
-- Customizable game settings, including language, environment, and difficulty
-- Auto convert menu language to the game language if wanted
-- Dynamic player class generation based on character description and player sex
-- Automatic player attribute generation
-- Continuous gameplay with generated narrative and choices
-- Inventory / location and quest management
+- [x] Customizable game settings, including language, environment, and difficulty
+- [x] Auto convert menu language to the game language if wanted
+- [x] Dynamic player class generation based on character description and player sex
+- [x] Automatic player attribute generation
+- [x] Continuous gameplay with generated narrative and choices
+- [x] Inventory management
+- [x] Automatic location generation
+- [x] Automatic quest management
+- [x] Automatic player stats management
 
 ## Todo
 
 - [ ] Make multiple prompt `game-multi-prompt.js` instead of one large one to avoid confusion for `gpt3.5-turbo`
-- [ ] Manage each data individually to avoid confusion for `gpt3.5-turbo` (ex: `inventory` and `location`)
+- [x] Manage each data individually to avoid confusion for `gpt3.5-turbo` (ex: `inventory` and `location`)
 - [ ] Rewrite every prompt to reduce token size
+
+
 
 ## Requirements
 

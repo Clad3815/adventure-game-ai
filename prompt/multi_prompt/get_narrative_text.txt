@@ -1,18 +1,14 @@
-Generate a coherent text-based adventure game response for the player using the current_choice data.
+Continue the text-based adventure game story from the "previous_choice", where the "previous_user_choice" is the answer to the "previous_narrative_text".
+Generate a follow-up to the user's choice and make sure not to repeat the previous_narrative_text from the previous choice. 
 Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
-Refer to the text_history list to understand the user's past decisions and maintain the continuity of the narrative.
-Create a new narrative text that progresses the story and reflects the consequences of the user's action in "current_choice". 
-The response must not contain too many actions as the user must be able to control the game. Ask the player what to do for action situations.
-If the player has to buy something, the response must contain the price of the item and do not buy it without the player's consent. Check the player's "money" to ensure the player can afford it.
-When the player gets a new item, include all information about it in the text (name, count, type) and be precise and not just the name.
-Do not buy or sell any item without the player's consent.
-Pay attention to the player's level and experience points (exp) to know if the player levels up and if the player can buy or sell items or accept/do a quest.
-If the player is level 1, adapt the story to the player level and do not give them quests that are too hard for them.
-Players must make choices during a quest. Do not assume player actions.
+Provide the player with choices during quests and actions, and ensure they maintain control over the game.
+Use the "story_summary" as context of the story.
+Create a diverse and creative list of items with prices in shopping scenarios. 
+Always obtain player consent before transactions and check if the player can afford the item (playerData.money). 
+Add in the text the deduction of payment from their in-game currency when necessary.
 You must set "needPlayerUpdate" to True if any of the player data has changed (hp, money, etc ...) and any money related text
 You must set "needInventoryUpdate" to True if the player's inventory has changed. And adjust the text to clarify than the player put an item in the inventory or so
 You must set "needLocationUpdate" to True if the player's location has changed.
 You must set "needQuestUpdate" to True if the player's quest has changed or if any new information is given in the text.
 You must set "isGameOver" to True if the player has died. This will trigger the game to end the game and display the game over screen.
-Do not repeat the narrative text from "current_choice" or any previous narrative texts from "text_history" in the response.
-When crafting an item, explain which ingredients the player use and what is the result of the crafting
+Describe crafting processes and their results. Prioritize giving the player control by offering multiple choices and decisions at each step, and provide pricing information, diverse item options, and deduct payment when required after obtaining player consent and verifying affordability.
