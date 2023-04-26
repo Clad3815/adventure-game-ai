@@ -232,13 +232,13 @@ async function generateNarrativeText(gameState) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/get_narrative_text.txt', 'utf8');
     let args = {
         // text_history: gameState.text_history,
-        story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
-        gameSettings: gameState.gameSettings,
-        playerData: gameState.playerData,
-        previous_choice: {
-            previous_narrative_text: gameState.current_choice.narrative_text,
-            previous_user_choice: gameState.current_choice.user_choice,
+        prior_choice: {
+            prior_narrative_text: gameState.current_choice.narrative_text,
+            prior_player_choice: gameState.current_choice.user_choice,
         },
+        playerData: gameState.playerData,
+        gameSettings: gameState.gameSettings,
+        story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
     };
     if (enableAIDebug) {
         console.log(chalk.red(translateTextTable.debug_narrive_text_send + ` `) + chalk.green(`${JSON.stringify(args)}`));
@@ -266,6 +266,7 @@ async function generateNarrativeText(gameState) {
 
 async function generateGameScenario(gameState, player, playerScenario) {
     if (playerScenario != '') {
+        let prompt = fs.readFileSync('./prompt/multi_prompt/generate_game_from_player_scenario.txt', 'utf8');
         spinner = await ora(translateTextTable.generate_game_scenario).start();
         spinner.start();
         baseScenario = await aiFunction({
@@ -282,7 +283,7 @@ async function generateGameScenario(gameState, player, playerScenario) {
                 main_idea: playerScenario,
             },
             functionName: "generate_player_scenario",
-            description: `Generate a coherent text-based adventure game starting scenario for the player using the main idea, use the player level to determine the scenario. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario will be the start of the game, it's must be entertaining and coherent.`,
+            description: prompt,
             funcReturn: "str",
             showDebug: enableDebug,
             temperature: 1,
@@ -291,6 +292,9 @@ async function generateGameScenario(gameState, player, playerScenario) {
         });
         spinner.stop();
     } else {
+
+        // Read the prompt from the file
+        let prompt = fs.readFileSync('./prompt/multi_prompt/generate_game_scenario.txt', 'utf8');
         spinner = await ora(translateTextTable.generate_game_scenario).start();
         spinner.start();
         baseScenario = await aiFunction({
@@ -305,7 +309,7 @@ async function generateGameScenario(gameState, player, playerScenario) {
                 }
             },
             functionName: "generate_player_scenario",
-            description: "Generate a coherent text-based adventure game starting scenario for the player (The player data can be used for the scenario), use the player level to determine the scenario. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario will be the start of the game, it's must be entertaining and coherent.",
+            description: prompt,
             funcReturn: "str",
             showDebug: enableDebug,
             temperature: 0.7,
