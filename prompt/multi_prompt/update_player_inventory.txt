@@ -20,4 +20,5 @@ For item renaming and information updates:
 - Replace the old item with the renamed item.
 - Update the item data in the response.
 
-Manage money transactions separately from the inventory. Do not add currency as an item. Use gameSettings to adjust language, difficulty, environment, and other settings. Remove items from the inventory if their count reaches 0 or below.
+Do nothing for the money transactions, as they are handled by the game server. Do not add currency as an item. 
+Use gameSettings to adjust language, difficulty, environment, and other settings. Remove items from the inventory if their count reaches 0 or below.
