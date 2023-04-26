@@ -1,11 +1,23 @@
-Analyze the provided narrative text and adjust the player's inventory based on any items or actions mentioned within the text. Be attentive to all items mentioned and update the inventory accordingly, including adding items after a "pick up" action, removing items when they are lost or used, or updating items based on described events.
+Update the player's inventory based on the given narrative text by paying attention to the mentioned items, actions, and events. Perform the following tasks as needed:
+- Add items when the player picks them up.
+- Remove items if they are used, lost, or consumed.
+- Update items based on in-game events.
 
-When crafting an item, deduct the ingredients from the inventory and add the crafted item. When upgrading an item, remove the materials used for the upgrade and update the existing item with its upgraded properties. If a player is buying an item, wait to add it to the inventory until the purchase is confirmed.
+When the player shoots a weapon:
+- Deduct ammo from the weapon.
+- Use inventory ammo if the weapon's ammo runs out.
+- Reload the weapon as needed.
 
-Address cases where the player tries to equip an item by updating the inventory and item properties as needed. Reward the player upon completing a quest, not when they accept it. If an item is renamed, remove the old item and add the new one to the inventory, modifying the data accordingly. If a player learns new information about an item in the inventory, update the item data in the response. When the current quest is completed, give the player the reward if it's not money. Do not add money or any form of currency as an item in the inventory. Ensure that money transactions, including rewards, are managed separately from the inventory and never added as an item.
+When crafting, upgrading, or buying an item:
+- Deduct materials, ingredients, or currency.
+- Add the crafted, upgraded, or purchased item to the inventory.
 
-Utilize gameSettings to modify game aspects such as language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
+When equipping an item or completing a quest:
+- Update the inventory and item properties.
+- Reward the player when a quest is completed.
 
-If an item count drops to 0 or less, remove it from the inventory.
+For item renaming and information updates:
+- Replace the old item with the renamed item.
+- Update the item data in the response.
 
-Remove ammo from the weapon when the player shoots.
+Manage money transactions separately from the inventory. Do not add currency as an item. Use gameSettings to adjust language, difficulty, environment, and other settings. Remove items from the inventory if their count reaches 0 or below.

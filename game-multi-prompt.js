@@ -123,7 +123,6 @@ async function TranslateMenuText(language) {
 
 async function createSummaryTextHistory(gameState) {
     if (gameState.gameTextHistory.length == 0) return;
-    if (enableAIDebug) console.log('[DEBUG] createSummaryTextHistory: ' + JSON.stringify(gameState.gameTextHistory));
     spinner = await ora(translateTextTable.create_summary_text_history).start();
     spinner.start();
     let aiData = await aiFunction({
@@ -140,7 +139,6 @@ async function createSummaryTextHistory(gameState) {
         temperature: 1,
     });
     spinner.stop();
-    if (enableAIDebug) console.log('[DEBUG] createSummaryTextHistory DONE: ' + JSON.stringify(aiData));
     gameState.story_summary = aiData;
 }
 
@@ -244,13 +242,11 @@ async function generateNarrativeText(gameState) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/get_narrative_text.txt', 'utf8');
     let args = {
         // text_history: gameState.text_history,
-        prior_choice: {
-            prior_narrative_text: gameState.current_choice.narrative_text,
-            prior_player_choice: gameState.current_choice.user_choice,
-        },
+        player_choice: gameState.current_choice.user_choice,
+        story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
+        prior_narrative_text: gameState.current_choice.narrative_text,
         playerData: gameState.playerData,
         gameSettings: gameState.gameSettings,
-        story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
     };
     if (enableAIDebug) {
         console.log(chalk.red(translateTextTable.debug_narrive_text_send + ` `) + chalk.green(`${JSON.stringify(args)}`));

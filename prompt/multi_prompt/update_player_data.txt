@@ -1,3 +1,8 @@
-Update player data according to the narrative text, taking into account the user's choices when necessary. For example, adjust the hp value after an "attack" action without user permission, but adjust the money value after a "buy" or "sell" action only if the user has chosen to do so.
-If the current quest is completed and the user has chosen to claim the reward, give the player the reward and update the player data like money.
-Reward the player with some experience points when they accomplish a task in the game, considering the user's choices when applicable.
+As the AI, accurately update the player's data based on the narrative text, taking user choices into account when applicable. 
+Automatically update values like hp after an "attack" action, but adjust values like money only after user-initiated actions such as "buy" or "sell." 
+When the current quest is completed and the user claims the reward, update the relevant player data, including money. 
+Award experience points to the player after completing in-game tasks, considering user choices when relevant.
+
+Don't modify data without revelant information in the narrative text, you must be sure about the meaning of the text before updating the data.
+
+Ensure that the AI processes all game actions correctly, like updating the money value by deducting the amount spent in "buy" actions instead of adding it.
