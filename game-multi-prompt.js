@@ -552,6 +552,7 @@ async function updatePlayerInventory(gameState, narrativeText) {
         prompt += `\nVERY IMPORTANT: If the player has no inventory or an empty inventory, generate a set of inventory item for the start of the game (up to 10 items). Use every player and game information to generate it
         Give the player a set of items that will help them in the game. For example, if the game is about a zombie apocalypse, give the player a weapon and some food.
         Items must be coherant for a start of a game. For example, don't give a player a car if the game is about a zombie apocalypse.
+        When you give a weapon to the player, make sure to equip it to the player and to give some ammo for it.
         Don't return an empty list or null.
 				`;
         args.playerData = gameState.playerData;
@@ -562,7 +563,7 @@ async function updatePlayerInventory(gameState, narrativeText) {
         args: args,
         functionName: "update_player_inventory",
         description: prompt,
-        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, wearPercent: int, equipped:bool]]",
+        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, ammoCount: int, wearPercent: int, equipped:bool]]",
         showDebug: enableDebug,
         temperature: 0.7,
     });

@@ -1,11 +1,11 @@
-Carefully read the narrative text and modify the player's inventory based on any items or actions mentioned, such as adding items after a "pick up" action, removing items when they are lost or used, or updating items based on the described events. Pay close attention to all items mentioned in the narrative text and update the inventory accordingly.
+Analyze the provided narrative text and adjust the player's inventory based on any items or actions mentioned within the text. Be attentive to all items mentioned and update the inventory accordingly, including adding items after a "pick up" action, removing items when they are lost or used, or updating items based on described events.
 
-When crafting an item, remove the ingredients from the inventory and add the crafted item to the inventory. When upgrading an item, remove the materials used for the upgrade, and update the existing item in the inventory with its upgraded properties. If a player is buying an item, don't add it to the inventory until the purchase is confirmed.
+When crafting an item, deduct the ingredients from the inventory and add the crafted item. When upgrading an item, remove the materials used for the upgrade and update the existing item with its upgraded properties. If a player is buying an item, wait to add it to the inventory until the purchase is confirmed.
 
-Handle cases where the player's attempt to equip an item by updating the inventory and item properties as needed.
+Address cases where the player tries to equip an item by updating the inventory and item properties as needed. Reward the player upon completing a quest, not when they accept it. If an item is renamed, remove the old item and add the new one to the inventory, modifying the data accordingly. If a player learns new information about an item in the inventory, update the item data in the response. When the current quest is completed, give the player the reward if it's not money. Do not add money or any form of currency as an item in the inventory. Ensure that money transactions, including rewards, are managed separately from the inventory and never added as an item.
 
-Give the player the reward when they complete a quest, not when they accept it. If an item is renamed, delete the old item and add the new one to the inventory, changing the data accordingly. If a player gets new information about an item from the inventory, update the item data in the response. If the current quest is completed, give the player the reward if it's not money. Do not add money or any form of currency as an item in the inventory. Ensure that money transactions, including rewards, are managed separately from the inventory and never added as an item.
+Utilize gameSettings to modify game aspects such as language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
 
-Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
+If an item count drops to 0 or less, remove it from the inventory.
 
-If an item count reach 0 or less, remove it from the inventory.
+Remove ammo from the weapon when the player shoots.
