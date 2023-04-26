@@ -1,5 +1,7 @@
 const readline = require('readline');
-const createAiFunctionInstance = require('../ai-function-helper/src/aiFunction');
+const {
+    createAiFunctionInstance
+} = require('../ai-function-helper/src/aiFunction');
 require('dotenv').config();
 const aiFunction = createAiFunctionInstance(process.env.OPENAI_API_KEY);
 const chalk = require('chalk'); // Import chalk

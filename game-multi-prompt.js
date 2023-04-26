@@ -1,5 +1,7 @@
 const readline = require('readline');
-const createAiFunctionInstance = require('../ai-function-helper/src/aiFunction');
+const {
+    createAiFunctionInstance
+} = require('../ai-function-helper/src/aiFunction');
 require('dotenv').config();
 const aiFunction = createAiFunctionInstance(process.env.OPENAI_API_KEY);
 
@@ -36,11 +38,11 @@ const rl = readline.createInterface({
 
 
 async function getUserInput(prompt, defaultInput = '') {
-    prompt = prompt.trim();
-    if (defaultInput != '') prompt = prompt + ` [${defaultInput}] : `;
+    prompt = chalk.yellow(prompt.trim());
+    if (defaultInput != '') prompt = prompt + chalk.blue(` [${defaultInput}] : `);
     else prompt = prompt + ' : ';
     return new Promise((resolve) => {
-        rl.question(chalk.yellow(prompt), (input) => {
+        rl.question(prompt, (input) => {
             if (defaultInput != '' && input == '') {
                 input = defaultInput;
             }

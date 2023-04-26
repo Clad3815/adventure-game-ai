@@ -7,7 +7,7 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 ## Features
 
 - [x] Customizable game settings, including language, environment, and difficulty
-- [x] Auto convert menu language to the game language if wanted
+- [x] Auto translate menu language to the game language if wanted
 - [x] Dynamic player class generation based on character description and player sex
 - [x] Automatic player attribute generation
 - [x] Continuous gameplay with generated narrative and choices
@@ -33,6 +33,16 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 - [ ] Add a skill system ?
 - [ ] More features ?
 
+
+## GIF Demo
+
+Demonstration:
+
+![Demo](https://github.com/Clad3815/adventure-game-ai/gif/demo.gif?raw=true)
+
+Demonsration with debug mode:
+
+![Demo Debug](https://github.com/Clad3815/adventure-game-ai/gif/demo_debug.gif?raw=true)
 
 
 ## Requirements
@@ -71,6 +81,34 @@ node game.js
 2. Follow the prompts to customize your game and create your character. You can also use the default settings by pressing `Enter` when prompted.
 
 3. Play the generated game and enjoy the adventure!
+
+## Debug
+To activate debug mode and AI debug mode within the `game.js` file, you can follow these simple steps:
+
+1. Locate the `game.js` file in your project directory.
+
+2. Open the `game.js` file in your preferred code editor.
+
+3. Find the following lines of code:
+
+```javascript
+const enableDebug = false; // Set to true to enable debug mode
+const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
+
+```
+
+4. To enable debug mode, change the value of enableDebug to true, this will show all prompt and answer from AI.
+
+```javascript
+const enableDebug = true; // Set to true to enable debug mode
+```
+
+5. To enable AI debug mode, change the value of enableAIDebug to true, this will show all data sent and answer from AI (Without the full prompt).
+
+```javascript
+const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
+```
+
 
 
 ## Contributing
