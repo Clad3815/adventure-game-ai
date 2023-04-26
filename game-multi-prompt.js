@@ -21,7 +21,7 @@ async function loadOra() {
 let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
+const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
 let choosenLanguage = '';
@@ -32,9 +32,8 @@ const rl = readline.createInterface({
 });
 
 
-async function getUserInput(prompt, translate = false, defaultInput = '') {
+async function getUserInput(prompt, defaultInput = '') {
     prompt = prompt.trim();
-    if (translate) prompt = await TranslateText(prompt);
     if (defaultInput != '') prompt = prompt + ` [${defaultInput}] : `;
     else prompt = prompt + ' : ';
     return new Promise((resolve) => {
@@ -104,44 +103,6 @@ async function TranslateMenuText(language) {
     return translateTextTable;
 }
 
-
-async function TranslateText(text) {
-    if (choosenLanguage == '' || choosenLanguage == 'en' || !translateMenu) {
-        return text;
-    }
-    spinner = await ora(translateTextTable.translating_text).start();
-    spinner.start();
-    let aiData = await aiFunction({
-        args: {
-            text: text,
-            to: choosenLanguage,
-        },
-        functionName: "translate_text",
-        description: "Translate text from one language to another. Use the to arguments to specify destination language. The text is from a game user interface. Return a string with the translated text.",
-        funcReturn: "str",
-        showDebug: false,
-        autoConvertReturn: true,
-        temperature: 0.3,
-    });
-    spinner.stop();
-    return aiData;
-}
-
-async function shortenSentence(sentence) {
-    spinner = await ora(translateTextTable.shortening_sentence).start();
-    spinner.start();
-    let aiData = await aiFunction({
-        args: {
-            sentence: sentence,
-        },
-        functionName: "shorten_sentence",
-        description: "Rewrite the sentence to a minimum of words without breaking the context or important data. If the sentence can't be shorten, it will return the same sentence.",
-        funcReturn: "str",
-        temperature: 1,
-    });
-    spinner.stop();
-    return aiData;
-}
 
 async function createSummaryTextHistory(gameState) {
     if (gameState.gameTextHistory.length == 0) return;
@@ -286,54 +247,14 @@ async function generateNarrativeText(gameState) {
         funcReturn: "dict[next_narrative_text:str, needPlayerUpdate:bool, needInventoryUpdate:bool, needLocationUpdate:bool, needQuestUpdate:bool, isGameOver:bool]",
         // showDebug: true,
         showDebug: enableDebug,
-        temperature: 0.8,
+        temperature: 0.6,
         presence_penalty: 0.6,
+        frequency_penalty: 0.6,
     });
     spinner.stop();
     if (enableAIDebug) {
         console.log(chalk.red(translateTextTable.debug_narrive_text_received + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
     }
-    return aiData;
-}
-
-async function updateInventoryAndStats(gameState, narrativeText) {
-    let prompt = fs.readFileSync('./prompt/multi_prompt/update_inventory_and_stats.txt', 'utf8');
-    if (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0) {
-        prompt += `\nVERY IMPORTANT: If the player has no inventory or an empty inventory, generate a set of inventory item for the start of the game (up to 10 items).
-        Consider the gameSettings to adapt the items data such as language(ensure the output text matches the selected language), difficulty, game environment(e.g., cyberpunk, medieval, fantasy), and other settings.
-        Example of item: 
-        [{
-        "name": "Knife",
-        "count": 1,
-        "type": "weapon",
-        "value": 1,
-        "equipped": true,
-        }, ...]
-        VERY IMPORTANT:  And generate a player "location" based on the narrativeText (home, forest, etc ...). 
-        Example of location:
-        {
-            "location_name": "Home of the lawyer",
-            "location_short_reason": "You are there for the quest given by your employer.", // A short reason why the player is there
-            "location_type": "home",
-            "location_sub": "Living Room",
-        }
-				`;
-    }
-    spinner = await ora(translateTextTable.update_inventory_stats).start();
-    spinner.start();
-    aiData = await aiFunction({
-        args: {
-            playerData: gameState.playerData,
-            narrativeText: narrativeText,
-            gameSettings: gameState.gameSettings,
-        },
-        functionName: "update_inventory_and_stats",
-        description: prompt,
-        funcReturn: "dict",
-        showDebug: enableDebug,
-        temperature: 0.8,
-    });
-    spinner.stop();
     return aiData;
 }
 
@@ -801,14 +722,14 @@ async function main() {
 
     if (savedGameState) {
         displaySaveInfo(savedGameState);
-        const loadSaveQuestion = await getUserInput(translateTextTable.load_save_question + ' (y/n)', false, 'n');
+        const loadSaveQuestion = await getUserInput(translateTextTable.load_save_question + ' (y/n)', 'n');
         loadSavedGame = (loadSaveQuestion == 'yes' || loadSaveQuestion == 'y') ? true : false;
     }
 
     if (loadSavedGame) {
         gameState = savedGameState;
         if (gameState.gameSettings.gameLanguage != 'en') {
-            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question + ' (y/n)', false, 'n');
+            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question + ' (y/n)', 'n');
             translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
             if (translateMenu) await TranslateMenuText(gameState.gameSettings.gameLanguage);
         }
@@ -816,20 +737,20 @@ async function main() {
         firstBoot = false;
     } else {
         let prompt = fs.readFileSync('./prompt/game_prompt.txt', 'utf8');
-        const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', false, 'en');
+        const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', 'en');
         if (gameLanguage != 'en') 
         {
-            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question  + ' (y/n)', false, 'n');
+            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question  + ' (y/n)', 'n');
             translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
             if (translateMenu) await TranslateMenuText(gameLanguage);
         }
         choosenLanguage = gameLanguage;
-        const username = await getUserInput(translateTextTable.choose_player_username, false, 'Jack');
-        const gameEnvironment = await getUserInput(translateTextTable.choose_game_environment, false, translateTextTable.choose_game_environment_default);
-        const playerScenario = await getUserInput(translateTextTable.choose_player_scenario, false, '');
-        const gameDifficulty = await getUserInput(translateTextTable.choose_game_difficulty, false, translateTextTable.choose_game_difficulty_default);
-        const playerSex = await getUserInput(translateTextTable.choose_player_sex, false, translateTextTable.choose_player_sex_default);
-        const description = await getUserInput(translateTextTable.choose_player_description, false, translateTextTable.choose_player_description_default);
+        const username = await getUserInput(translateTextTable.choose_player_username, 'Jack');
+        const gameEnvironment = await getUserInput(translateTextTable.choose_game_environment, translateTextTable.choose_game_environment_default);
+        const playerScenario = await getUserInput(translateTextTable.choose_player_scenario, '');
+        const gameDifficulty = await getUserInput(translateTextTable.choose_game_difficulty, translateTextTable.choose_game_difficulty_default);
+        const playerSex = await getUserInput(translateTextTable.choose_player_sex, translateTextTable.choose_player_sex_default);
+        const description = await getUserInput(translateTextTable.choose_player_description, translateTextTable.choose_player_description_default);
     
         let player;
         let Welcome = `\n${translateTextTable.welcome_game} `.replace('[username]', username);
@@ -956,7 +877,7 @@ async function main() {
             await showNewItemsAndStats(updatedInventoryStats, gameState);
         }
         if (!firstBoot) {
-            const acceptIAAnswer = await getUserInput(chalk.magenta(translateTextTable.accept_ia_answer + ' (y/n) '));
+            const acceptIAAnswer = await getUserInput(chalk.magenta(translateTextTable.accept_ia_answer + ' (y/n) '), 'y');
             if (acceptIAAnswer.toLowerCase() != 'y') {
                 console.log(' ');
                 continue;
@@ -994,7 +915,7 @@ async function main() {
 			user_choice: userInput,
 		};
 
-        if (gameState.gameTextHistory.length > 15) {
+        if (gameState.gameTextHistory.length > 5) {
             gameState.gameTextHistory.shift();
         }
         if (firstBoot) firstBoot = false;
