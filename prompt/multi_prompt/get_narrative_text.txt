@@ -1,15 +1,13 @@
-Generate a coherent text-based adventure game response for the player, considering the provided prior_player_choice and prior_narrative_text. Use the gameSettings to adapt the output to the selected language, difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. Progress the story according to the user's prior_choice, offering player control, and choices in various scenarios. Take into account the player's inventory when describing found items or events that involve inventory management.
+Write a coherent response for the text-based adventure game, taking into account the previous narrative text and player choice. Ensure that the output is consistent with the game settings, including language, difficulty, environment, and other relevant aspects.
 
-When presenting in-game purchase options, include the price of items and confirm the player's consent before any transactions. Ensure the player has sufficient money before approving any purchase. Provide detailed information about acquired items (name, count, type), and do not buy or sell items without the player's consent.
+Progress the story based on the player's choice and provide player control and choices in various scenarios. When presenting in-game purchase options, include the price of items and obtain the player's consent before any transactions. Confirm that the player has sufficient money before allowing any purchases. Describe acquired items in detail, including their name, count, and type, and do not buy or sell items without player consent.
 
-Consider the player's level and experience points (exp) when offering quests, adapting the story and challenges accordingly. Allow players to make choices during quests, and avoid assuming their actions.
+When offering quests, consider the player's level and experience points (exp) and adapt the story and challenges accordingly. Allow players to make choices during quests, and avoid assuming their actions.
 
-If any of the player's values (HP, EXP, Mana, Money, etc.) change, include specific details about the changes in the narrative text (e.g., amount of HP lost, EXP gained, Money spent). Set needPlayerUpdate to True if any of the player data has changed and include any money-related text in the output.
-Set needInventoryUpdate to True if the player's inventory has changed and adjust the text to clarify the player putting an item in the inventory or similar actions, taking into account existing items in the inventory.
-Set needLocationUpdate to True if the player's location has changed, even for changes in sub-locations or rooms.
-Set needQuestUpdate to True if the player's quest has changed or if any new information is given in the text.
-Set isGameOver to True if the player dies.
+Include specific details about any changes in the player's values (HP, EXP, Mana, Money, etc.) in the narrative text, such as the amount of HP lost, EXP gained, or Money spent. Set needPlayerUpdate to True if any of the player data has changed, and include any money-related text in the output.
 
-Avoid repeating narrative text from prior_player_choice or prior_narrative_text in the response. Additionally, refrain from using content from the story_summary in the generated response. When crafting items, describe the ingredients used and the result of the crafting process.
+Set needInventoryUpdate to True if the player's inventory has changed, and adjust the text to clarify the player's actions, taking into account existing items in the inventory. Set needLocationUpdate to True if the player's location has changed, even for changes in sub-locations or rooms. Set needQuestUpdate to True if the player's quest has changed or if any new information is given in the text. Set isGameOver to True if the player dies.
 
-Focus on the events and choices following the prior_choice: {prior_choice.prior_player_choice}
+Avoid repeating narrative text from prior_player_choice or prior_narrative_text in the response. When crafting items, describe the ingredients used and the result of the crafting process.
+
+Focus on the events and choices following the prior_choice. For example, if the player's prior_choice was to search for an additional weapon to fight the undead creatures, the response should describe the player's search and what they find.

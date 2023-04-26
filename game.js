@@ -288,7 +288,7 @@ async function main() {
 					"location_name": "Home of the lawyer",
 					"location_reason": "You are there for the quest given by your employer.",
 					"location_type": "home",
-					"location_sub": "Living Room",
+					"room_name": "Living Room",
 				}
 				`;
             }

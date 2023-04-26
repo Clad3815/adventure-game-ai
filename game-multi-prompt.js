@@ -13,9 +13,7 @@ let translateTextTable = require('./lang');
 
 
 let ora;
-
 let firstBoot = true;
-
 let gameState;
 
 async function loadOra() {
@@ -121,7 +119,7 @@ async function createSummaryTextHistory(gameState) {
         functionName: "create_summary_text_history",
         description: `Create a summary from a text history. The "text_history" argument contain a list of narrative_text with the player answer to the text. The goal is to summarize the history to a little text which explain all important point. The final text must contain maximum 100 words And must keep all important informations, the sentence need to be shortest possible the text is not designed to be display it's just a reminder for the AI. Example: 
 "Jack went to the market to buy a sword, after that he go back to home and sleep very well" to 
-"Jack go market buy sword, go home, sleep, etc ..."`,
+"Jack go market buy sword, go home, sleep"`,
         funcReturn: "str",
         // showDebug: true,
         showDebug: enableDebug,
@@ -433,7 +431,7 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
             logIfChanged(oldLocation.location_name, newLocation.location_name, `${translateTextTable.player_location_change} ${newLocation.location_name}`),
             logIfChanged(oldLocation.location_short_reason, newLocation.location_short_reason, `${translateTextTable.player_location_reason} ${newLocation.location_short_reason}`),
             logIfChanged(oldLocation.location_type, newLocation.location_type, `${translateTextTable.player_location_type} ${newLocation.location_type}`),
-            logIfChanged(oldLocation.location_sub, newLocation.location_sub, `${translateTextTable.player_location_sublocation} ${newLocation.location_sub}`)
+            logIfChanged(oldLocation.room_name, newLocation.room_name, `${translateTextTable.player_location_sublocation} ${newLocation.room_name}`)
         ].forEach(item => {
             if (item !== null) {
                 locationItems.push(item);
@@ -564,7 +562,12 @@ async function updatePlayerInventory(gameState, narrativeText) {
         temperature: 0.7,
     });
     spinner.stop();
-    return aiData;
+    if (aiData != null && typeof aiData === 'object' && aiData.length > 0 && typeof aiData[0] === 'object' && aiData[0].hasOwnProperty('name')) {
+      return aiData;
+    } else {
+        if (enableAIDebug) console.log(translateTextTable.ai_invalid_return + JSON.stringify(aiData));
+        return updatePlayerInventory(gameState, narrativeText);
+    }
 }
 
 async function updatePlayerStats(gameState, narrativeText) {
@@ -583,13 +586,17 @@ async function updatePlayerStats(gameState, narrativeText) {
                 exp: gameState.playerData.exp,
                 level: gameState.playerData.level,
                 next_level_exp: gameState.playerData.next_level_exp,
+                strength: gameState.playerData.strength,
+                intelligence: gameState.playerData.intelligence,
+                dexterity: gameState.playerData.dexterity,
+                constitution: gameState.playerData.constitution,
             },
             narrativeText: narrativeText,
             gameSettings: gameState.gameSettings,
         },
         functionName: "update_player_stats",
         description: prompt,
-        funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, exp: int, level: int, next_level_exp: int]",
+        funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, strength: int, intelligence: int, dexterity: int, constitution: int, exp: int, level: int, next_level_exp: int]",
         showDebug: enableDebug,
         temperature: 0.4,
     });
@@ -629,7 +636,7 @@ async function updatePlayerLocation(gameState, narrativeText) {
         },
         functionName: "update_player_location",
         description: prompt,
-        funcReturn: "dict[location_name: str, location_short_reason: str, location_type: str, location_sub: str]",
+        funcReturn: "dict[location_name: str, location_short_reason: str, location_type: str, room_name: str]",
         showDebug: enableDebug,
         temperature: 0.7,
     });
@@ -819,7 +826,7 @@ async function main() {
                     "location_name": "",
                     "location_short_reason": "",
                     "location_type": "",
-                    "location_sub": "",
+                    "room_name": "",
                 },
                 quest: {
                     "quest_name": "No Quest",

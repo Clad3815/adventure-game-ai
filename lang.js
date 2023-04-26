@@ -72,6 +72,7 @@ let translateTextTable = {
     no_possible_choice: 'No possible choice, enter a custom action',
     debug_init_attribute_send: '[DEBUG] Data for init attribute:',
     debug_init_attribute_received: '[DEBUG] Init attribute:',
+    ai_invalid_return: '[AI] Invalid return, re-generating ...',
 }
 
 module.exports = translateTextTable;
