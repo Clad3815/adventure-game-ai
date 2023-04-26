@@ -1,6 +1,7 @@
 Update the player's inventory based on the given narrative text by paying attention to the mentioned items, actions, and events. Perform the following tasks as needed:
 - Add items when the player picks them up.
-- Remove items if they are used, lost, or consumed.
+- Remove items or update count if they are used, lost, or consumed.
+- Don't remove weapon when used, decrease the ammo count instead.
 - Update items based on in-game events.
 
 When the player shoots a weapon:

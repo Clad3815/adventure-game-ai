@@ -49,7 +49,6 @@ async function getUserInput(prompt, defaultInput = '') {
     });
 }
 
-let possible_classes = [];
 async function shortenSentence(sentence) {
     spinner = await ora("Shortening sentence ...").start();
     spinner.start();
@@ -243,8 +242,9 @@ async function generateNarrativeText(gameState) {
     let args = {
         // text_history: gameState.text_history,
         player_choice: gameState.current_choice.user_choice,
-        story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
+        // story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
         prior_narrative_text: gameState.current_choice.narrative_text,
+        previous_narrative: gameState.previous_narrative,
         playerData: gameState.playerData,
         gameSettings: gameState.gameSettings,
     };
@@ -626,7 +626,12 @@ async function updatePlayerQuest(gameState, narrativeText) {
         temperature: 0.7,
     });
     spinner.stop();
-    return aiData;
+    if (aiData != null && typeof aiData === 'object' && aiData.quest_name) {
+        return aiData;
+    } else {
+        if (enableAIDebug) console.log(translateTextTable.ai_invalid_return + JSON.stringify(aiData));
+        return updatePlayerQuest(gameState, narrativeText);
+    }
 }
 
 async function updatePlayerLocation(gameState, narrativeText) {
@@ -712,7 +717,7 @@ function displaySaveInfo(savedGameState) {
     console.log(chalk.yellow('  Game Settings:'), JSON.stringify(savedGameState.gameSettings));
     console.log(chalk.yellow('  Player Name:'), savedGameState.playerData.username);
     console.log(chalk.yellow('  Player Description:'), savedGameState.playerData.description);
-    console.log(chalk.yellow('  Story Summary:'), savedGameState.story_summary);
+    // console.log(chalk.yellow('  Story Summary:'), savedGameState.story_summary);
 
     // Last player choice
     console.log('###############################################');
@@ -772,6 +777,7 @@ async function main() {
     
         gameState = {
             gameTextHistory: [],
+            previous_narrative: [],
             current_choice: null,
             gameSettings: {
                 gameEnvironment: gameEnvironment,
@@ -796,7 +802,8 @@ async function main() {
         console.log(chalk.green(`\n${translateTextTable.scenario_title}: `) + chalk.blue(`${baseScenario}`) + `\n`);
         gameState = {
             gameTextHistory: [],
-            story_summary: await shortenSentence(baseScenario),
+            // story_summary: await shortenSentence(baseScenario),
+            previous_narrative: [],
             current_choice: null,
             playerData: {
                 hp: player.hp,
@@ -912,12 +919,16 @@ async function main() {
             console.log(chalk.yellow(translateTextTable.no_possible_choice));
             userInput = await getUserInput(chalk.magenta(translateTextTable.select_player_action_custom));
         }
-        await createSummaryTextHistory(gameState);
+        // await createSummaryTextHistory(gameState);
         console.log(' ');
     
         if (currentChoice) {
             gameState.gameTextHistory.push({
                 narrative_text: currentChoice.narrative_text,
+                user_choice: currentChoice.user_choice,
+            });
+            gameState.previous_narrative.push({
+                narrative_text: await shortenSentence(currentChoice.narrative_text),
                 user_choice: currentChoice.user_choice,
             });
         }
@@ -928,8 +939,8 @@ async function main() {
 			user_choice: userInput,
 		};
 
-        if (gameState.gameTextHistory.length > 5) {
-            gameState.gameTextHistory.shift();
+        if (gameState.previous_narrative.length > 5) {
+            gameState.previous_narrative.shift();
         }
         if (firstBoot) firstBoot = false;
         await saveGame(gameState);
