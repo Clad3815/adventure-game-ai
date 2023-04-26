@@ -543,7 +543,10 @@ async function updatePlayerInventory(gameState, narrativeText) {
         "name": "Knife",
         "count": 1,
         "type": "weapon",
+        "attack": 1,
+        "defense": 0,
         "value": 1,
+        "wearPercent": 100,
         "equipped": true,
         }, ...]
 
@@ -557,7 +560,7 @@ async function updatePlayerInventory(gameState, narrativeText) {
         args: args,
         functionName: "update_player_inventory",
         description: prompt,
-        funcReturn: "list[dict[name:str, count:int, type:str, value:int, equipped:bool]]",
+        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, wearPercent: int, equipped:bool]]",
         showDebug: enableDebug,
         temperature: 0.7,
     });
@@ -582,7 +585,7 @@ async function updatePlayerStats(gameState, narrativeText) {
             exp: gameState.playerData.exp,
             level: gameState.playerData.level,
             next_level_exp: gameState.playerData.next_level_exp,
-            strength: gameState.playerData.strength,
+            strength: gameState.playerData.attributes.strength,
             intelligence: gameState.playerData.attributes.intelligence,
             dexterity: gameState.playerData.attributes.dexterity,
             constitution: gameState.playerData.attributes.constitution,
