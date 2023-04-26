@@ -50,7 +50,21 @@ async function getUserInput(prompt, defaultInput = '') {
 }
 
 let possible_classes = [];
-
+async function shortenSentence(sentence) {
+    spinner = await ora("Shortening sentence ...").start();
+    spinner.start();
+    let aiData = await aiFunction({
+        args: {
+            sentence: sentence,
+        },
+        functionName: "shorten_sentence",
+        description: "Rewrite the sentence to a minimum of words without breaking the context or important data. If the sentence can't be shorten, it will return the same sentence.",
+        funcReturn: "str",
+        temperature: 1,
+    });
+    spinner.stop();
+    return aiData;
+}
 async function TranslateMenuText(language) {
     // Define the file path for the translated menu
     const filePath = path.join(__dirname, `translate/translatedMenu_${language}.json`);
@@ -452,8 +466,6 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
             logIfChanged(oldQuest.quest_name, newQuest.quest_name, `${translateTextTable.player_new_quest} ${newQuest.quest_name}`),
             logIfChanged(oldQuest.quest_description, newQuest.quest_description, `${translateTextTable.player_quest_description} ${newQuest.quest_description}`),
             logIfChanged(oldQuest.quest_status, newQuest.quest_status, `${translateTextTable.player_quest_status} ${newQuest.quest_status}`),
-            logIfChanged(oldQuest.quest_current_step, newQuest.quest_current_step, `${translateTextTable.player_quest_current_step} ${newQuest.quest_current_step}`),
-            logIfChanged(oldQuest.quest_total_step, newQuest.quest_total_step, `${translateTextTable.player_quest_total_step} ${newQuest.quest_total_step}`),
             logIfChanged(oldQuest.quest_reward, newQuest.quest_reward, `${translateTextTable.player_quest_reward} ${newQuest.quest_reward}`)
         ].forEach(item => {
             if (item !== null) {
@@ -538,18 +550,8 @@ async function updatePlayerInventory(gameState, narrativeText) {
     };
     if (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0) {
         prompt += `\nVERY IMPORTANT: If the player has no inventory or an empty inventory, generate a set of inventory item for the start of the game (up to 10 items). Use every player and game information to generate it
-        Example of item: 
-        [{
-        "name": "Knife",
-        "count": 1,
-        "type": "weapon",
-        "attack": 1,
-        "defense": 0,
-        "value": 1,
-        "wearPercent": 100,
-        "equipped": true,
-        }, ...]
-
+        Give the player a set of items that will help them in the game. For example, if the game is about a zombie apocalypse, give the player a weapon and some food.
+        Items must be coherant for a start of a game. For example, don't give a player a car if the game is about a zombie apocalypse.
         Don't return an empty list or null.
 				`;
         args.playerData = gameState.playerData;
@@ -622,7 +624,7 @@ async function updatePlayerQuest(gameState, narrativeText) {
         },
         functionName: "update_player_quest",
         description: prompt,
-        funcReturn: "dict[quest_name: str, quest_description: str, quest_status: str, quest_current_step: int, quest_total_step: int, quest_reward: str]",
+        funcReturn: "dict[quest_name: str, quest_description: str, quest_status: str, quest_step_list: list[dict[id: int, step_name: str, step_goal: str, step_status:bool]], quest_reward: str]",
         showDebug: enableDebug,
         temperature: 0.7,
     });
@@ -797,7 +799,7 @@ async function main() {
         console.log(chalk.green(`\n${translateTextTable.scenario_title}: `) + chalk.blue(`${baseScenario}`) + `\n`);
         gameState = {
             gameTextHistory: [],
-            story_summary: baseScenario,
+            story_summary: await shortenSentence(baseScenario),
             current_choice: null,
             playerData: {
                 hp: player.hp,
@@ -830,8 +832,7 @@ async function main() {
                     "quest_name": "No Quest",
                     "quest_description": "Find a quest to start your adventure !",
                     "quest_status": "Not Started",
-                    "quest_total_step": 1,
-                    "quest_current_step": 1,
+                    "quest_step_list": [],
                     "quest_reward": ""
                 }
             },
