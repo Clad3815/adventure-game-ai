@@ -572,28 +572,30 @@ async function updatePlayerInventory(gameState, narrativeText) {
 
 async function updatePlayerStats(gameState, narrativeText) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_data.txt', 'utf8');
+    let args = {
+        playerData: {
+            hp: gameState.playerData.hp,
+            max_hp: gameState.playerData.max_hp,
+            mana: gameState.playerData.mana,
+            max_mana: gameState.playerData.max_mana,
+            money: gameState.playerData.money,
+            exp: gameState.playerData.exp,
+            level: gameState.playerData.level,
+            next_level_exp: gameState.playerData.next_level_exp,
+            strength: gameState.playerData.strength,
+            intelligence: gameState.playerData.attributes.intelligence,
+            dexterity: gameState.playerData.attributes.dexterity,
+            constitution: gameState.playerData.attributes.constitution,
+        },
+        narrativeText: narrativeText,
+        gameSettings: gameState.gameSettings,
+    };
+    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_stats_data_update + ` `) + chalk.green(`${JSON.stringify(args)}`));
     spinner = await ora(translateTextTable.update_player_stats).start();
     spinner.start();
     
     aiData = await aiFunction({
-        args: {
-            playerData: {
-                hp: gameState.playerData.hp,
-                max_hp: gameState.playerData.max_hp,
-                mana: gameState.playerData.mana,
-                max_mana: gameState.playerData.max_mana,
-                money: gameState.playerData.money,
-                exp: gameState.playerData.exp,
-                level: gameState.playerData.level,
-                next_level_exp: gameState.playerData.next_level_exp,
-                strength: gameState.playerData.strength,
-                intelligence: gameState.playerData.intelligence,
-                dexterity: gameState.playerData.dexterity,
-                constitution: gameState.playerData.constitution,
-            },
-            narrativeText: narrativeText,
-            gameSettings: gameState.gameSettings,
-        },
+        args: args,
         functionName: "update_player_stats",
         description: prompt,
         funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, strength: int, intelligence: int, dexterity: int, constitution: int, exp: int, level: int, next_level_exp: int]",
@@ -601,6 +603,7 @@ async function updatePlayerStats(gameState, narrativeText) {
         temperature: 0.4,
     });
     spinner.stop();
+    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_stats_data_updated + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
     return aiData;
 }
 
@@ -648,17 +651,6 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
     let newGameState = JSON.parse(JSON.stringify(gameState));
 
     if (narrativeTextRequest && narrativeTextRequest.needPlayerUpdate) {
-        const debugPlayerData = {
-            hp: gameState.playerData.hp,
-            max_hp: gameState.playerData.max_hp,
-            mana: gameState.playerData.mana,
-            max_mana: gameState.playerData.max_mana,
-            money: gameState.playerData.money,
-            exp: gameState.playerData.exp,
-            level: gameState.playerData.level,
-            next_level_exp: gameState.playerData.next_level_exp,
-        };
-        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_stats_data_update + ` `) + chalk.green(`${JSON.stringify(debugPlayerData)}`));
         let testPlayerUpdate = await updatePlayerStats(newGameState, narrativeText);
         newGameState.playerData.hp = testPlayerUpdate.hp;
         newGameState.playerData.max_hp = testPlayerUpdate.max_hp;
@@ -668,7 +660,10 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
         newGameState.playerData.exp = testPlayerUpdate.exp;
         newGameState.playerData.level = testPlayerUpdate.level;
         newGameState.playerData.next_level_exp = testPlayerUpdate.next_level_exp;
-        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_stats_data_updated  + ` `) + chalk.green(`${JSON.stringify(testPlayerUpdate)}`));
+        newGameState.playerData.attributes.strength = testPlayerUpdate.strength;
+        newGameState.playerData.attributes.intelligence = testPlayerUpdate.intelligence;
+        newGameState.playerData.attributes.dexterity = testPlayerUpdate.dexterity;
+        newGameState.playerData.attributes.constitution = testPlayerUpdate.constitution;
     }
 
     if (narrativeTextRequest === false || narrativeTextRequest.needLocationUpdate) {
@@ -814,12 +809,12 @@ async function main() {
                 sex: player.sex,
                 username: player.username,
                 description: player.playerDescription,
-                attributes: [
-                    { name: "strength", value: player.strength },
-                    { name: "dexterity", value: player.dexterity },
-                    { name: "constitution", value: player.constitution },
-                    { name: "intelligence", value: player.intelligence },
-                ],
+                attributes: {
+                    strength: player.strength,
+                    dexterity: player.dexterity,
+                    constitution: player.constitution,
+                    intelligence: player.intelligence,
+                },
                 special_attributes: player.special_attributes_list,
                 inventory: [],
                 location: {
