@@ -253,6 +253,7 @@ async function generateNarrativeText(gameState) {
         temperature: 0.6,
         presence_penalty: 0.6,
         frequency_penalty: 0.6,
+        // model: "gpt4",
     });
     spinner.stop();
     if (enableAIDebug) {

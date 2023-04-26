@@ -18,9 +18,20 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 
 ## Todo
 
-- [ ] Make multiple prompt `game-multi-prompt.js` instead of one large one to avoid confusion for `gpt3.5-turbo`
+- [x] Make multiple prompt `game-multi-prompt.js` instead of one large one to avoid confusion for `gpt3.5-turbo`
 - [x] Manage each data individually to avoid confusion for `gpt3.5-turbo` (ex: `inventory` and `location`)
+- [ ] Add `gpt4` support instead of editing `generateNarrativeText` function manually
+- [ ] Generate a whole scenario to the game from start to end to follow a story line
+- [ ] Generate a main quest to the game
+- [ ] Add sub-quest system
+- [ ] Add a graphical interface with HTML+CSS+JS to show inventory, stats, map, etc.
 - [ ] Rewrite every prompt to reduce token size
+- [ ] Add a map system ?
+- [ ] Add a battle system ?
+- [ ] Add a shop system ?
+- [ ] Add a crafting system ?
+- [ ] Add a skill system ?
+- [ ] More features ?
 
 
 
