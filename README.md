@@ -9,12 +9,13 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 - [x] Customizable game settings, including language, environment, and difficulty
 - [x] Auto translate menu language to the game language if wanted
 - [x] Dynamic player class generation based on character description and player sex
-- [x] Automatic player attribute generation
+- [x] Automatic player attribute generation based on player details and game settings
 - [x] Continuous gameplay with generated narrative and choices
 - [x] Inventory management
 - [x] Automatic location generation
 - [x] Automatic quest management
 - [x] Automatic player stats management
+- [x] Auto save game
 
 ## Todo
 
