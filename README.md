@@ -38,11 +38,11 @@ This project has been tested with `gpt3.5-turbo` and must return better result w
 
 Demonstration:
 
-![Demo](https://github.com/Clad3815/adventure-game-ai/gif/demo.gif?raw=true)
+![Demo](https://github.com/Clad3815/adventure-game-ai/blob/master/gif/demo.gif)
 
 Demonsration with debug mode:
 
-![Demo Debug](https://github.com/Clad3815/adventure-game-ai/gif/demo_debug.gif?raw=true)
+![Demo Debug](https://github.com/Clad3815/adventure-game-ai/blob/master/gif/demo_debug.gif)
 
 
 ## Requirements
