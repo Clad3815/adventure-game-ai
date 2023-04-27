@@ -1,7 +1,5 @@
-Generate random attributes (hp, max_hp, mana, max_mana, money, strength, intelligence, dexterity, constitution, special_attributes_list) for the player based on the game settings and the player class. 
+Generate random player attributes (hp, max_hp, mana, max_mana, money, strength, intelligence, dexterity, constitution) and a list of 1 to 5 special attributes (special_attributes_list) that suit the player's class and game settings. Consider the game settings for language, difficulty, and game environment (e.g., cyberpunk, medieval, fantasy), and ensure the output text matches the selected language. Take into account the player level and game difficulty while generating attributes.
 
-Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.
-The specials attribute (special_attributes_list) must match the player class and game settings (1 up to 5).
-Example: {"hp": 100, "max_hp": 100, "mana": 50, "max_mana": 50, "money": 10, "strength": 10, "intelligence": 10, "dexterity": 10, "constitution": 10, "special_attributes_list": ["smart", "charming"]}
+Example output: {"hp": 100, "max_hp": 100, "mana": 50, "max_mana": 50, "money": 10, "strength": 10, "intelligence": 10, "dexterity": 10, "constitution": 10, "special_attributes_list": ["smart", "charming"]}
 
-Pay attention to the player level and the game difficulty while generating the attributes.
+Additionally, assign a "money_currency" based on the game settings, such as "gold" for medieval settings, or real-world currencies like "Dollars" or "Euros" for modern settings. Choose the real-world currency based on the game's language.

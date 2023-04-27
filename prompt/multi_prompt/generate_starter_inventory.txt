@@ -1,0 +1,9 @@
+In the context of an adventure game, guide the AI to manage the player's inventory according to the narrative text, considering the events, actions, and items mentioned. 
+Here are the essential tasks:
+Guide the AI to generate a set of inventory item for the start of the game (up to 10 items). 
+Use every player and game information to generate it
+Give the player a set of items that will help them in the game. For example, if the game is about a zombie apocalypse, give the player a weapon and some food.
+Items must be coherant for a start of a game. For example, don't give a player a car if the game is about a zombie apocalypse.
+When you give a weapon to the player, make sure to equip it to the player and to give some ammo for it.
+
+- Present "ammoCount" as "{currentAmmo}/{maxAmmo}" or "N/A" for items that don't use ammo.

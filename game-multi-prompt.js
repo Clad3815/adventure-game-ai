@@ -24,10 +24,9 @@ async function loadOra() {
 let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
+const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
-let choosenLanguage = '';
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -159,7 +158,7 @@ async function initializePlayerAttributes(gameState, playerClass, playerSex, pla
         args: args,
         functionName: "generate_player_attribut",
         description: prompt,
-        funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, strength: int, intelligence: int, dexterity: int, constitution: int, special_attributes_list: list[str]]",
+        funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, money_currency: str, strength: int, intelligence: int, dexterity: int, constitution: int, special_attributes_list: list[str]]",
         showDebug: enableDebug,
         autoConvertReturn: true,
         temperature: 0.7,
@@ -239,12 +238,12 @@ async function getValidClass(gameState, description, playerSex) {
 
 async function generateNarrativeText(gameState) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/get_narrative_text.txt', 'utf8');
+    let narrative_history = gameState.previous_narrative.slice(0, gameState.previous_narrative.length - 1);
     let args = {
-        // text_history: gameState.text_history,
-        player_choice: gameState.current_choice.user_choice,
-        // story_summary: (gameState.story_summary == gameState.current_choice.narrative_text) ? "" : gameState.story_summary,
-        prior_narrative_text: gameState.current_choice.narrative_text,
-        previous_narrative: gameState.previous_narrative,
+        narrative_history: {
+            current_narrative: gameState.previous_narrative[gameState.previous_narrative.length - 1],
+            past_narrative: narrative_history,
+        },
         playerData: gameState.playerData,
         gameSettings: gameState.gameSettings,
     };
@@ -474,6 +473,30 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
         printCategory('Quest', questItems);
     }
 
+    // Added: Display quest steps
+    if (newQuest && newQuest.quest_step_list && newQuest.quest_step_list.length > 0) {
+        const questStepsItems = [];
+
+        newQuest.quest_step_list.forEach((step, index) => {
+            const oldStep = oldQuest.quest_step_list && oldQuest.quest_step_list[index] ? oldQuest.quest_step_list[index] : {};
+
+            [
+                logIfChanged(oldStep.id, step.id, `Step ID: ${step.id}`),
+                logIfChanged(oldStep.step_name, step.step_name, `Step Name: ${step.step_name}`),
+                logIfChanged(oldStep.step_goal, step.step_goal, `Step Goal: ${step.step_goal}`),
+                logIfChanged(oldStep.step_status, step.step_status, `Step Status: ${step.step_status ? 'Completed' : 'Incomplete'}`)
+            ].forEach(item => {
+                if (item !== null) {
+                    questStepsItems.push(item);
+                }
+            });
+        });
+
+        if (questStepsItems.length > 0) {
+            printCategory('Quest Steps', questStepsItems);
+        }
+    }
+
     if (updatedInventoryStats.playerData && updatedInventoryStats.playerData.inventory) {
         let newItems = [];
         let removedItems = [];
@@ -534,36 +557,53 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
     }
 }
 
+async function generateStarterInventory(gameState, narrativeText) {
+    let prompt = fs.readFileSync('./prompt/multi_prompt/generate_starter_inventory.txt', 'utf8');
+    let args = {
+        narrativeText: narrativeText,
+        gameSettings: gameState.gameSettings,
+    };
+    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_update + ` `) + chalk.green(`${JSON.stringify(args)}`));
+    spinner = await ora(translateTextTable.update_player_inventory).start();
+    spinner.start();
+    aiData = await aiFunction({
+        args: args,
+        functionName: "generate_player_inventory",
+        description: prompt,
+        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, ammoCount: str, wearPercent: int, equipped:bool]]",
+        showDebug: enableDebug,
+        temperature: 0.9,
+    });
+    spinner.stop();
+    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_updated + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
+    if (aiData != null && typeof aiData === 'object' && aiData.length > 0 && typeof aiData[0] === 'object' && aiData[0].hasOwnProperty('name')) {
+        return aiData;
+    } else {
+        if (enableAIDebug) console.log(translateTextTable.ai_invalid_return + JSON.stringify(aiData));
+        return generateStarterInventory(gameState, narrativeText);
+    }
+}
 
 async function updatePlayerInventory(gameState, narrativeText) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_inventory.txt', 'utf8');
-    spinner = await ora(translateTextTable.update_player_inventory).start();
-    spinner.start();
     let args = {
         inventory: gameState.playerData.inventory,
         narrativeText: narrativeText,
         gameSettings: gameState.gameSettings,
     };
-    if (gameState.playerData.inventory == null || gameState.playerData.inventory.length == 0) {
-        prompt += `\nVERY IMPORTANT: If the player has no inventory or an empty inventory, generate a set of inventory item for the start of the game (up to 10 items). Use every player and game information to generate it
-        Give the player a set of items that will help them in the game. For example, if the game is about a zombie apocalypse, give the player a weapon and some food.
-        Items must be coherant for a start of a game. For example, don't give a player a car if the game is about a zombie apocalypse.
-        When you give a weapon to the player, make sure to equip it to the player and to give some ammo for it.
-        Don't return an empty list or null.
-				`;
-        args.playerData = gameState.playerData;
-    } else {
-        prompt += `\nVERY IMPORTANT: Return an empty inventory if nothing changed from the input inventory.`;
-    }
+    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_update + ` `) + chalk.green(`${JSON.stringify(args)}`));
+    spinner = await ora(translateTextTable.update_player_inventory).start();
+    spinner.start();
     aiData = await aiFunction({
         args: args,
         functionName: "update_player_inventory",
         description: prompt,
-        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, ammoCount: int, wearPercent: int, equipped:bool]]",
+        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, ammoCount: str, wearPercent: int, equipped:bool]]",
         showDebug: enableDebug,
         temperature: 0.7,
     });
     spinner.stop();
+    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_updated + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
     if (aiData != null && typeof aiData === 'object' && aiData.length > 0 && typeof aiData[0] === 'object' && aiData[0].hasOwnProperty('name')) {
       return aiData;
     } else {
@@ -581,6 +621,7 @@ async function updatePlayerStats(gameState, narrativeText) {
             mana: gameState.playerData.mana,
             max_mana: gameState.playerData.max_mana,
             money: gameState.playerData.money,
+            money_currency: gameState.playerData.money_currency,
             exp: gameState.playerData.exp,
             level: gameState.playerData.level,
             next_level_exp: gameState.playerData.next_level_exp,
@@ -687,11 +728,9 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
         if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_quest_data_updated  + ` `) + chalk.green(`${JSON.stringify(testQuestUpdate)}`));
     }
 
-    if (narrativeTextRequest === false || narrativeTextRequest.needInventoryUpdate) {
-        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_update + ` `) + chalk.green(`${JSON.stringify(gameState.playerData.inventory)}`));
+    if (narrativeTextRequest && narrativeTextRequest.needInventoryUpdate) {
         let testInventoryUpdate = await updatePlayerInventory(newGameState, narrativeText);
         if (testInventoryUpdate.length > 0) newGameState.playerData.inventory = testInventoryUpdate;
-        if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_updated  + ` `) + chalk.green(`${JSON.stringify(testInventoryUpdate)}`));
     }
 
 
@@ -722,8 +761,8 @@ function displaySaveInfo(savedGameState) {
     // Last player choice
     console.log('###############################################');
     console.log(chalk.yellow('  Last Player Choice:'));
-    console.log(chalk.yellow('    Narrative:'), savedGameState.current_choice.narrative_text);
-    console.log(chalk.yellow('    Choice:'), savedGameState.current_choice.user_choice);
+    console.log(chalk.yellow('    Narrative:'), savedGameState.previous_narrative[savedGameState.previous_narrative.length - 1].narrative_text);
+    console.log(chalk.yellow('    Choice:'), savedGameState.previous_narrative[savedGameState.previous_narrative.length - 1].user_choice);
     console.log('###############################################');
     console.log(' ');
 }
@@ -747,23 +786,21 @@ async function main() {
 
     if (loadSavedGame) {
         gameState = savedGameState;
-        if (gameState.gameSettings.gameLanguage != 'en') {
-            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question + ' (y/n)', 'n');
+        if (gameState.gameSettings.gameLanguage != 'en' && !translateMenu) {
+            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question + ' (y/n)', 'y');
             translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
             if (translateMenu) await TranslateMenuText(gameState.gameSettings.gameLanguage);
         }
-        choosenLanguage = gameState.gameSettings.gameLanguage;
         firstBoot = false;
     } else {
         let prompt = fs.readFileSync('./prompt/game_prompt.txt', 'utf8');
         const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', 'en');
         if (gameLanguage != 'en') 
         {
-            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question  + ' (y/n)', 'n');
+            const translateMenuAsk = await getUserInput(translateTextTable.translating_menu_question  + ' (y/n)', 'y');
             translateMenu = (translateMenuAsk == 'yes' || translateMenuAsk == 'y') ? true : false;
             if (translateMenu) await TranslateMenuText(gameLanguage);
         }
-        choosenLanguage = gameLanguage;
         const username = await getUserInput(translateTextTable.choose_player_username, 'Jack');
         const gameEnvironment = await getUserInput(translateTextTable.choose_game_environment, translateTextTable.choose_game_environment_default);
         const playerScenario = await getUserInput(translateTextTable.choose_player_scenario, '');
@@ -778,7 +815,6 @@ async function main() {
         gameState = {
             gameTextHistory: [],
             previous_narrative: [],
-            current_choice: null,
             gameSettings: {
                 gameEnvironment: gameEnvironment,
                 gameDifficulty: gameDifficulty,
@@ -804,11 +840,11 @@ async function main() {
             gameTextHistory: [],
             // story_summary: await shortenSentence(baseScenario),
             previous_narrative: [],
-            current_choice: null,
             playerData: {
                 hp: player.hp,
                 max_hp: player.max_hp,
                 money: player.money,
+                money_currency: player.money_currency,
                 mana: player.mana,
                 max_mana: player.max_mana,
                 exp: 0,
@@ -847,10 +883,9 @@ async function main() {
             },
         };
         
-        let startInventoryUpdate;
-        do {
-            startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
-        } while (startInventoryUpdate.playerData.inventory.length === 0);
+        let startInventoryUpdate = await updatePlayerDataIfNeeded(gameState, baseScenario);
+        startInventoryUpdate.playerData.inventory = await generateStarterInventory(startInventoryUpdate, baseScenario);
+       
         await showNewItemsAndStats(startInventoryUpdate, gameState);
         
         gameState = syncInventoryAndStats(startInventoryUpdate, gameState);
@@ -859,13 +894,11 @@ async function main() {
 
 
     while (true) {
-        let currentChoice;
         let updatedInventoryStats;
         let narrativeText;
         let updateInventory = false;
         let gameOver;
         try {
-            currentChoice = gameState.current_choice;
             if (firstBoot) {
                 narrativeText = baseScenario;
             } else {
@@ -922,22 +955,15 @@ async function main() {
         // await createSummaryTextHistory(gameState);
         console.log(' ');
     
-        if (currentChoice) {
-            gameState.gameTextHistory.push({
-                narrative_text: currentChoice.narrative_text,
-                user_choice: currentChoice.user_choice,
-            });
-            gameState.previous_narrative.push({
-                narrative_text: await shortenSentence(currentChoice.narrative_text),
-                user_choice: currentChoice.user_choice,
-            });
-        }
-		
-
-		gameState.current_choice = {
-			narrative_text: narrativeText,
-			user_choice: userInput,
+		let data = {
+		    id: gameState.gameTextHistory.length,
+            // narrative_text: await shortenSentence(narrativeText),
+            narrative_text: narrativeText,
+            user_choice: userInput,
 		};
+		gameState.gameTextHistory.push(data);
+		gameState.previous_narrative.push(data);
+
 
         if (gameState.previous_narrative.length > 5) {
             gameState.previous_narrative.shift();

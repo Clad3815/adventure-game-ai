@@ -1,1 +1,7 @@
-Generate an engaging and immersive text-based adventure game starting scenario for a level 1 player, placing them at the very beginning of their journey. Use the gameSettings to adapt game aspects such as language (match the output text to the selected language), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. The scenario should introduce the player to the game world, setting the stage for their upcoming adventures without placing them in the middle of an action or mission. Conclude the scenario with the question, "What will you do now?" to encourage player engagement and decision-making.
+Generate an engaging and immersive text-based adventure game starting scenario for a level 1 player, taking into account the gameSettings and character details provided as input. 
+The gameSettings include game environment, game difficulty, and game language (Ensure the output match the game language). 
+The character details include username, special attributes, class, and sex. 
+Create a random starting location within the chosen game environment and present an introductory scene that eases the player into the game world. 
+Allow the player complete freedom to make custom choices and decisions. 
+Instead of placing the player in the middle of an action or mission, focus on setting the stage for their upcoming adventures. 
+Conclude the scenario with the question, "What will you do now?" to encourage player engagement and decision-making.

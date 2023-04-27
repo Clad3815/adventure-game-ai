@@ -1,25 +1,30 @@
-Update the player's inventory based on the given narrative text by paying attention to the mentioned items, actions, and events. Perform the following tasks as needed:
-- Add items when the player picks them up.
-- Remove items or update count if they are used, lost, or consumed.
-- Don't remove weapon when used, decrease the ammo count instead.
-- Update items based on in-game events.
+In the context of an adventure game, guide the AI to manage the player's inventory according to the narrative text, considering the events, actions, and items mentioned. Here are the essential tasks:
 
-When the player shoots a weapon:
-- Deduct ammo from the weapon.
-- Use inventory ammo if the weapon's ammo runs out.
-- Reload the weapon as needed.
+Inventory Management:
+- Add items to the inventory when the player acquires them.
+- Decrease item count or remove items from the inventory when they are used, lost, or consumed. 
 
-When crafting, upgrading, or buying an item:
-- Deduct materials, ingredients, or currency.
-- Add the crafted, upgraded, or purchased item to the inventory.
+Weapon Usage:
+- If a weapon is used, reduce its ammo count but do not remove the weapon.
+- Deduct used ammo from the weapon's ammo count.
+- If the weapon's ammo runs out, draw ammo from the inventory to reload the weapon.
 
-When equipping an item or completing a quest:
-- Update the inventory and item properties.
-- Reward the player when a quest is completed.
+Crafting, Upgrading, and Purchasing Items:
+- Deduct necessary materials, ingredients, or currency from the inventory.
+- Add the new or upgraded item to the inventory.
 
-For item renaming and information updates:
-- Replace the old item with the renamed item.
-- Update the item data in the response.
+Quest Completion and Item Equipping:
+- Update inventory and item properties when an item is equipped or a quest is completed.
+- On quest completion, add the reward to the player's inventory.
 
-Do nothing for the money transactions, as they are handled by the game server. Do not add currency as an item. 
-Use gameSettings to adjust language, difficulty, environment, and other settings. Remove items from the inventory if their count reaches 0 or below.
+Item Renaming and Data Updates:
+- Replace old items with renamed ones in the inventory.
+- Reflect the changes in the item data in the AI's responses.
+
+Special Cases:
+- The game server handles currency transactions, so do not add currency to the inventory.
+- Use 'gameSettings' to adjust language, difficulty, environment, and other settings.
+- If an item's count falls to 0 or below, remove it from the inventory.
+- Present "ammoCount" as "{currentAmmo}/{maxAmmo}" or "N/A" for items that don't use ammo.
+- If the player purchases or acquires an item and consumes it immediately, don't add it to the inventory. For instance, if 'You buy and eat a piece of roasted meat for 5 gold coins.', the 'roasted meat' should not be added to the inventory as it was immediately consumed.
+- Don't change item "wearPercent" unless the narrative text explicitly mentions than the item is damaged or repaired.
