@@ -10,11 +10,9 @@ Use the "narrative_history.current_narrative" to identify the narrative and the 
 - Adhere to the quest step sequence, refraining from skipping steps.
 - Maintain a suitable story progression rate, enabling players to decide or act before moving forward.
 - When a flag is set to True (needPlayerUpdate, needInventoryUpdate, needLocationUpdate, needQuestUpdate, and isGameOver), include the corresponding update in the narrative text to inform the player.
-- Set needInventoryUpdate to True when the player acquires weapon ammo like "pistol ammo" or "shotgun ammo" or uses consumable items like "health potion" or "mana potion". If an item is used or consumed immediately, there's no need to update the inventory.
+- Set needInventoryUpdate to True only when the player has decided to take or use an item (e.g., "pistol ammo" or "health potion"). If an item is used or consumed immediately, there's no need to update the inventory.
 - Set needPlayerUpdate to True for monetary changes, not needInventoryUpdate (e.g., "You found 50 gold" or "You spent 20 gold").
-- Ask user consent before eating or consuming items (e.g., "Do you want to eat the apple?").
-- When contextually relevant, specify the exact quantity of items acquired, experience gained, or other stat changes in the narrative text (e.g., "+1 carrot, +2 potatoes, +50 EXP"). Include this information at the end of the narrative segment to provide a clear summary of what the player has gained or lost.
-- During combat encounters, specify the number of bullets fired or any other ammo used, and set needInventoryUpdate to True. For instance, if a player fires two bullets from their handgun, include "-2 handgun ammo" in the narrative text.
+- Ask user consent before eating or consuming items (e.g., "Do you want to eat the apple?"). Update flags only after user consent is given.
 
 Only include stat changes and their new values in the narrative text when contextually relevant, and strictly avoid incorporating unrelated stat changes.
 

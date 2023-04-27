@@ -24,7 +24,7 @@ async function loadOra() {
 let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
+const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
 
@@ -570,7 +570,7 @@ async function generateStarterInventory(gameState, narrativeText) {
         args: args,
         functionName: "generate_player_inventory",
         description: prompt,
-        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, ammoCount: str, wearPercent: int, equipped:bool]]",
+        funcReturn: "list[dict[id: int, name:str, count:int, attack: int, defense: int, type:str, value:int, ammo: dict[type: str, count: int, max: int], wearPercent: int, equipped:bool]]",
         showDebug: enableDebug,
         temperature: 0.9,
     });
@@ -598,7 +598,7 @@ async function updatePlayerInventory(gameState, narrativeText) {
         args: args,
         functionName: "update_player_inventory",
         description: prompt,
-        funcReturn: "list[dict[name:str, count:int, attack: int, defense: int, type:str, value:int, ammoCount: str, wearPercent: int, equipped:bool]]",
+        funcReturn: "list[dict[id: int, name:str, count:int, attack: int, defense: int, type:str, value:int, ammo: dict[type: str, count: int, max: int], wearPercent: int, equipped:bool]]",
         showDebug: enableDebug,
         temperature: 0.7,
     });

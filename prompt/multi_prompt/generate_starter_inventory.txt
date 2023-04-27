@@ -6,4 +6,5 @@ Give the player a set of items that will help them in the game. For example, if 
 Items must be coherant for a start of a game. For example, don't give a player a car if the game is about a zombie apocalypse.
 When you give a weapon to the player, make sure to equip it to the player and to give some ammo for it.
 
-- Present "ammoCount" as "{currentAmmo}/{maxAmmo}" or "N/A" for items that don't use ammo.
+Set a null "ammo" data for items that do not use ammo. Otherwise give a full loaded weapon to the player (the ammo count must be coherent with the weapon type)
+Don't give ammo to melee weapons, only to ranged weapons or magic weapons
