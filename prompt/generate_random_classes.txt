@@ -1,4 +1,7 @@
-Generate 4-8 possible begginer classes for the player to choose from based on the game settings and the player description of his character and the character sex. 
-Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. 
-The class name must match the sex of the player and the environment of the game (cyberpunk, medieval, fantasy, etc.).
-Select classes according to the player level and the game difficulty.
+Generate 4 up to 25 (if revelent) potential beginner classes for the player to choose from, taking into account the game settings, the character description provided by the player, and the character's sex. 
+
+Ensure that the classes generated are a logical fit for the character's description and align with the game's environment. 
+
+The class names should be gender-appropriate and should reflect the game's environment (e.g., cyberpunk, medieval, fantasy, etc.). Ensure that the classes are suitable for the player's chosen level of difficulty and the player current level
+
+The language of the output text must match the language selected in the game settings. For example, if French is selected, the class names and their descriptions should be in French.

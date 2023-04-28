@@ -1,5 +1,5 @@
-Generate a list of coherent text-based adventure choices based on the narrative text, taking into account the player's past decisions, acquired items, and current health. Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. 
-Refer to the story_summary to understand the user's past decisions and maintain the continuity of the narrative.
+Generate a list of coherent text-based adventure choices based on the narrative text, taking into account the player's past decisions, acquired items, and current health. 
+Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings. 
 Use all playerData information, including the player's inventory, quest info, and health status, to help generate relevant and meaningful choices. 
 Generate a list of 1-10 choices, even if the user's action doesn't lead to a new decision point.
 Ensure the generated choices do not contradict or repeat any information from the narrative or the player's inventory. 
