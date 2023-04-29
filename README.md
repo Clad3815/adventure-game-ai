@@ -17,23 +17,26 @@ This project has been tested with `gpt3.5-turbo` and is expected to return bette
 - Automatic player stats management: Player stats are tracked and updated automatically.
 - Auto save game: Don't worry about losing your progress, the game auto-saves.
 
+And much more! Explore the game to discover all its features.
+
 
 ## Todo
 
 - [x] Make multiple prompt `game-multi-prompt.js` instead of one large one to avoid confusion for `gpt3.5-turbo`
 - [x] Manage each data individually to avoid confusion for `gpt3.5-turbo` (ex: `inventory` and `location`)
 - [ ] Add `gpt4` support instead of editing `generateNarrativeText` function manually
-- [ ] Generate a whole scenario to the game from start to end to follow a story line
+- [ ] Generate a complete game scenario from start to end to follow a storyline.
 - [ ] Generate a main quest to the game
 - [ ] Add sub-quest system
-- [ ] Add a graphical interface with HTML+CSS+JS to show inventory, stats, map, etc.
-- [ ] Rewrite every prompt to reduce token size
-- [ ] Add a map system ?
-- [ ] Add a battle system ?
-- [ ] Add a shop system ?
-- [ ] Add a crafting system ?
-- [ ] Add a skill system ?
-- [ ] More features ?
+- [ ] Improve save and load system: Add support for multiple save slots or an autosave feature.
+- [ ] Enhanced player customization: Allow for more nuanced character customization, such as choosing a backstory or specific skill sets.
+- [ ] Add NPC interaction: Include non-player characters (NPCs) that players can interact with, such as merchants, quest givers, or potential party members.
+- [ ] Implement a more complex combat system: Add different types of attacks, defense mechanisms, or even a magic system.
+- [ ] Create a GUI (Graphical User Interface): Add maps, character portraits, or inventory screens.
+- [ ] Add a sound system: Enhance the gaming experience by adding sound effects or background music.
+- [ ] Create different endings: Increase replayability by creating different endings based on player choices throughout the game.
+- [ ] Add achievements or trophies: Implement an achievement system to give players a sense of accomplishment.
+- [ ] Add modding support: Allow players to modify the game and create their own content.
 
 
 ## GIF Demo
