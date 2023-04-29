@@ -1,5 +1,4 @@
-Update the player's quest data when needed based on the narrative text, including quest name, description, type, and reward. 
-Give the player a reward when they complete a quest, not when they accept it. 
-Once a quest is completed, delete reset quest data to null instead of marking it as "Completed". 
-If a player gets new information about a quest, update the quest data in the response.
+Update the player's quest data with the new data got questUpdateText. When a quest started, new steps added, step completed, etc ... you have to update information accordly to the questUpdateText.
+You can use data from narrativeText to get additionnal information about the quest.
+Once a quest is completed, reset all quest data to default value instead of marking it as "Completed". 
 Use the gameSettings to modify game aspects like language (The output text must match the language selected), difficulty, game environment (cyberpunk, medieval, fantasy, etc.), and other settings.

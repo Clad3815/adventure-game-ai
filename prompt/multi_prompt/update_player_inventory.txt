@@ -1,33 +1,7 @@
-In the context of an adventure game, guide the AI to manage the player's inventory according to the narrative text, considering the events, actions, and items mentioned. 
-Here are the essential tasks:
+In the context of an adventure game, guide the AI to manage the player's inventory according to the narrative text and the "itemToAdd" / "itemToRemove" / "itemToUpdate" data, considering the events, actions, and items mentioned. 
 
-Inventory Management:
-- Add items to the inventory when the player acquires them.
-- Decrease item count or remove items from the inventory when they are used, lost, or consumed. 
-
-Weapon Usage:
-- If a weapon is used, reduce its ammo count but do not remove the weapon.
-- Deduct used ammo from the weapon's ammo count.
-- If the weapon's ammo runs out, draw ammo from the inventory to reload the weapon.
-
-Crafting, Upgrading, and Purchasing Items:
-- Deduct necessary materials, ingredients, or currency from the inventory.
-- Add the new or upgraded item to the inventory.
-
-Quest Completion and Item Equipping:
-- Update inventory and item properties when an item is equipped or a quest is completed.
-- On quest completion, add the reward to the player's inventory.
-
-Item Renaming and Data Updates:
-- Replace old items with renamed ones in the inventory.
-- Reflect the changes in the item data in the AI's responses.
-
-Special Cases:
-- The game server handles currency transactions, so do not add currency to the inventory.
 - Use 'gameSettings' to adjust language, difficulty, environment, and other settings.
 - If an item's count falls to 0 or below, remove it from the inventory.
 - Set a null "ammo" data for items that do not use ammo. Otherwise give a full loaded weapon to the player (the ammo count must be coherent with the weapon type)
 - Don't give ammo to melee weapons, only to ranged weapons or magic weapons
-- If the player purchases or acquires an item and consumes it immediately, don't add it to the inventory. For instance, if 'You buy and eat a piece of roasted meat for 5 gold coins.', the 'roasted meat' should not be added to the inventory as it was immediately consumed.
-- Don't change item "wearPercent" unless the narrative text explicitly mentions than the item is damaged or repaired.
-- Don't do anything if there is no user consent to collect data or if the narrative text ask to the player if he wants to collect data.
+- Always add the items in the correct category "weapons" for weapons, "armor" for armor / shield / neck / etc ..., "items" for all others items

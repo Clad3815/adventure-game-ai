@@ -24,7 +24,7 @@ async function loadOra() {
 let spinner;
 
 const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
+const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
 
@@ -158,7 +158,7 @@ async function initializePlayerAttributes(gameState, playerClass, playerSex, pla
         args: args,
         functionName: "generate_player_attribut",
         description: prompt,
-        funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, money_currency: str, strength: int, intelligence: int, dexterity: int, constitution: int, special_attributes_list: list[str]]",
+        funcReturn: "dict[hp: dict[current: int, max: int], mana: dict[current: int, max: int], money: int, money_currency: str, strength: int, intelligence: int, dexterity: int, constitution: int, special_attributes_list: list[str]]",
         showDebug: enableDebug,
         autoConvertReturn: true,
         temperature: 0.7,
@@ -258,12 +258,13 @@ async function generateNarrativeText(gameState) {
         args: args,
         functionName: "generate_narrative_text",
         description: prompt,
-        funcReturn: "dict[next_narrative_text:str, needPlayerUpdate:bool, needInventoryUpdate:bool, needLocationUpdate:bool, needQuestUpdate:bool, isGameOver:bool]",
+        funcReturn: "dict[next_narrative_text:str, playerUpdateList: list[dict[stat:str, value:str]], inventoryUpdateList: list[toAdd: list[dict], toRemove: list[dict], toUpdate: list[dict]], locationUpdateText:str, questUpdateText: str, isGameOver:bool]",
         // showDebug: true,
         showDebug: enableDebug,
-        temperature: 0.6,
-        presence_penalty: 0.6,
-        frequency_penalty: 0.6,
+        temperature: 0.9,
+        // presence_penalty: 0.6,
+        // frequency_penalty: 0.6,
+        top_p: 1,
         // model: "gpt4",
     });
     spinner.stop();
@@ -359,20 +360,20 @@ function syncInventoryAndStats(updatedInventoryStats, gameState) {
     if (updatedInventoryStats.playerInventory) {
         gameState.playerInventory = updatedInventoryStats.playerInventory;
     }
-    if (updatedInventoryStats.playerData.hp) {
-        gameState.playerData.hp = updatedInventoryStats.playerData.hp;
+    if (updatedInventoryStats.playerData.hp.current) {
+        gameState.playerData.hp.current = updatedInventoryStats.playerData.hp.current;
     }
-    if (updatedInventoryStats.playerData.max_hp) {
-        gameState.playerData.max_hp = updatedInventoryStats.playerData.max_hp;
+    if (updatedInventoryStats.playerData.hp.max) {
+        gameState.playerData.hp.max = updatedInventoryStats.playerData.hp.max;
     }
     if (updatedInventoryStats.playerData.money) {
         gameState.playerData.money = updatedInventoryStats.playerData.money;
     }
-    if (updatedInventoryStats.playerData.mana) {
-        gameState.playerData.mana = updatedInventoryStats.playerData.mana;
+    if (updatedInventoryStats.playerData.mana.current) {
+        gameState.playerData.mana.current = updatedInventoryStats.playerData.mana.current;
     }
-    if (updatedInventoryStats.playerData.max_mana) {
-        gameState.playerData.max_mana = updatedInventoryStats.playerData.max_mana;
+    if (updatedInventoryStats.playerData.mana.max) {
+        gameState.playerData.mana.max = updatedInventoryStats.playerData.mana.max;
     }
     if (updatedInventoryStats.playerData.exp) {
         gameState.playerData.exp = updatedInventoryStats.playerData.exp;
@@ -420,8 +421,8 @@ async function showNewItemsAndStats(updatedInventoryStats, gameState) {
     if (newPlayer) {
         [
             logIfChanged(oldPlayer.level, newPlayer.level, `${translateTextTable.player_level_change} ${newPlayer.level}`),
-            logIfChanged(oldPlayer.hp, newPlayer.hp, `${translateTextTable.player_hp_change} ${newPlayer.hp}/${oldPlayer.max_hp}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.hp - oldPlayer.hp}`),
-            logIfChanged(oldPlayer.mana, newPlayer.mana, `${translateTextTable.player_mana_change} ${newPlayer.mana}/${oldPlayer.max_mana}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.mana - oldPlayer.mana}`),
+            logIfChanged(oldPlayer.hp.current, newPlayer.hp.current, `${translateTextTable.player_hp_change} ${newPlayer.hp.current}/${oldPlayer.hp.max}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.hp.current - oldPlayer.hp.current}`),
+            logIfChanged(oldPlayer.mana.current, newPlayer.mana.current, `${translateTextTable.player_mana_change} ${newPlayer.mana.current}/${oldPlayer.mana.max}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.mana.current - oldPlayer.mana.current}`),
             logIfChanged(oldPlayer.exp, newPlayer.exp, `${translateTextTable.player_exp_change} ${newPlayer.exp}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.exp - oldPlayer.exp}`),
             logIfChanged(oldPlayer.next_level_exp, newPlayer.next_level_exp, `${translateTextTable.player_next_level_exp_change} ${newPlayer.next_level_exp}`),
             logIfChanged(oldPlayer.money, newPlayer.money, `${translateTextTable.player_money_change} ${newPlayer.money}`, `${translateTextTable.player_interface_value_change}: ${newPlayer.money - oldPlayer.money}`)
@@ -575,13 +576,13 @@ async function generateStarterInventory(gameState, narrativeText) {
         args: args,
         functionName: "generate_player_inventory",
         description: prompt,
-        funcReturn: "list[dict[id: int, name:str, count:int, attack: int, defense: int, type:str, money_value:int, ammo: dict[type: str, count: int, max: int], wearPercent: int, equipped:bool]]",
+        funcReturn: "dict[weapons: dict[id: int, name:str, count:int, attack: int, type:str, money_value:int, ammo: dict[type: str, count: int, max: int], equipped:bool],armor: dict[id: int, name:str, count:int, defense: int, type:str, money_value:int, equipped:bool], items: dict[id: int, name:str, count:int, type:str, money_value:int]]",
         showDebug: enableDebug,
         temperature: 0.9,
     });
     spinner.stop();
     if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_updated + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
-    if (aiData != null && typeof aiData === 'object' && aiData.length > 0 && typeof aiData[0] === 'object' && aiData[0].hasOwnProperty('name')) {
+    if (aiData && aiData.weapons) {
         return aiData;
     } else {
         if (enableAIDebug) console.log(translateTextTable.ai_invalid_return + JSON.stringify(aiData));
@@ -589,11 +590,14 @@ async function generateStarterInventory(gameState, narrativeText) {
     }
 }
 
-async function updatePlayerInventory(gameState, narrativeText) {
+async function updatePlayerInventory(gameState, narrativeTextRequest) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_inventory.txt', 'utf8');
     let args = {
         playerInventory: gameState.playerInventory,
-        narrativeText: narrativeText,
+        narrativeText: narrativeTextRequest.next_narrative_text,
+        itemToAdd: narrativeTextRequest.inventoryUpdateList.toAdd,
+        itemToRemove: narrativeTextRequest.inventoryUpdateList.toRemove,
+        itemToUpdate: narrativeTextRequest.inventoryUpdateList.toUpdate,
         gameSettings: gameState.gameSettings,
     };
     if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_update + ` `) + chalk.green(`${JSON.stringify(args)}`));
@@ -603,28 +607,26 @@ async function updatePlayerInventory(gameState, narrativeText) {
         args: args,
         functionName: "update_player_inventory",
         description: prompt,
-        funcReturn: "list[dict[id: int, name:str, count:int, attack: int, defense: int, type:str, money_value:int, ammo: dict[type: str, count: int, max: int], wearPercent: int, equipped:bool]]",
+        funcReturn: "dict[weapons: dict[id: int, name:str, count:int, attack: int, type:str, money_value:int, ammo: dict[type: str, count: int, max: int], equipped:bool],armor: dict[id: int, name:str, count:int, defense: int, type:str, money_value:int, equipped:bool], items: dict[id: int, name:str, count:int, type:str, money_value:int]]",
         showDebug: enableDebug,
         temperature: 0.7,
     });
     spinner.stop();
     if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_inventory_data_updated + ` `) + chalk.green(`${JSON.stringify(aiData)}`));
-    if (aiData != null && typeof aiData === 'object' && aiData.length > 0 && typeof aiData[0] === 'object' && aiData[0].hasOwnProperty('name')) {
+    if (aiData && aiData.weapons) {
       return aiData;
     } else {
         if (enableAIDebug) console.log(translateTextTable.ai_invalid_return + JSON.stringify(aiData));
-        return updatePlayerInventory(gameState, narrativeText);
+        return updatePlayerInventory(gameState, narrativeTextRequest);
     }
 }
 
-async function updatePlayerStats(gameState, narrativeText) {
+async function updatePlayerStats(gameState, narrativeTextRequest) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_data.txt', 'utf8');
     let args = {
         playerData: {
             hp: gameState.playerData.hp,
-            max_hp: gameState.playerData.max_hp,
             mana: gameState.playerData.mana,
-            max_mana: gameState.playerData.max_mana,
             money: gameState.playerData.money,
             money_currency: gameState.playerData.money_currency,
             exp: gameState.playerData.exp,
@@ -635,7 +637,8 @@ async function updatePlayerStats(gameState, narrativeText) {
             dexterity: gameState.playerData.attributes.dexterity,
             constitution: gameState.playerData.attributes.constitution,
         },
-        narrativeText: narrativeText,
+        narrativeText: narrativeTextRequest.next_narrative_text,
+        playerUpdateList: narrativeTextRequest.playerUpdateList,
         gameSettings: gameState.gameSettings,
     };
     if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_stats_data_update + ` `) + chalk.green(`${JSON.stringify(args)}`));
@@ -646,7 +649,7 @@ async function updatePlayerStats(gameState, narrativeText) {
         args: args,
         functionName: "update_player_stats",
         description: prompt,
-        funcReturn: "dict[hp: int, max_hp: int, mana: int, max_mana: int, money: int, strength: int, intelligence: int, dexterity: int, constitution: int, exp: int, level: int, next_level_exp: int]",
+        funcReturn: "dict[hp: dict[current: int, max: int], mana: dict[current: int, max: int], money: int, strength: int, intelligence: int, dexterity: int, constitution: int, exp: int, level: int, next_level_exp: int]",
         showDebug: enableDebug,
         temperature: 0.4,
     });
@@ -655,11 +658,12 @@ async function updatePlayerStats(gameState, narrativeText) {
     return aiData;
 }
 
-async function updatePlayerQuest(gameState, narrativeText) {
+async function updatePlayerQuest(gameState, narrativeTextRequest) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_quest.txt', 'utf8');
     let args = {
         questData: gameState.playerQuest,
-        narrativeText: narrativeText,
+        narrativeText: narrativeTextRequest.next_narrative_text,
+        questUpdateText: narrativeTextRequest.questUpdateText,
         gameSettings: gameState.gameSettings,
     };
     if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_quest_data_update + ` `) + chalk.green(`${JSON.stringify(args)}`));
@@ -679,15 +683,16 @@ async function updatePlayerQuest(gameState, narrativeText) {
         return aiData;
     } else {
         if (enableAIDebug) console.log(translateTextTable.ai_invalid_return + JSON.stringify(aiData));
-        return updatePlayerQuest(gameState, narrativeText);
+        return updatePlayerQuest(gameState, narrativeTextRequest);
     }
 }
 
-async function updatePlayerLocation(gameState, narrativeText) {
+async function updatePlayerLocation(gameState, narrativeTextRequest) {
     let prompt = fs.readFileSync('./prompt/multi_prompt/update_player_location.txt', 'utf8');
     let args = {
         location: gameState.playerLocation,
-        narrativeText: narrativeText,
+        narrativeText: narrativeTextRequest.next_narrative_text,
+        locationUpdateText: narrativeTextRequest.locationUpdateText,
         gameSettings: gameState.gameSettings,
     };
     if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_send_location_data_update + ` `) + chalk.green(`${JSON.stringify(args)}`));
@@ -709,12 +714,10 @@ async function updatePlayerLocation(gameState, narrativeText) {
 async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest = false) {
     let newGameState = JSON.parse(JSON.stringify(gameState));
 
-    if (narrativeTextRequest && narrativeTextRequest.needPlayerUpdate) {
-        let testPlayerUpdate = await updatePlayerStats(newGameState, narrativeText);
+    if (narrativeTextRequest && narrativeTextRequest.playerUpdateList && narrativeTextRequest.playerUpdateList.length > 0) {
+        let testPlayerUpdate = await updatePlayerStats(newGameState, narrativeTextRequest);
         newGameState.playerData.hp = testPlayerUpdate.hp;
-        newGameState.playerData.max_hp = testPlayerUpdate.max_hp;
         newGameState.playerData.mana = testPlayerUpdate.mana;
-        newGameState.playerData.max_mana = testPlayerUpdate.max_mana;
         newGameState.playerData.money = testPlayerUpdate.money;
         newGameState.playerData.exp = testPlayerUpdate.exp;
         newGameState.playerData.level = testPlayerUpdate.level;
@@ -725,18 +728,18 @@ async function updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextR
         newGameState.playerData.attributes.constitution = testPlayerUpdate.constitution;
     }
 
-    if (narrativeTextRequest === false || narrativeTextRequest.needLocationUpdate) {
-        let testLocationUpdate = await updatePlayerLocation(newGameState, narrativeText);
+    if (narrativeTextRequest && narrativeTextRequest.locationUpdateText) {
+        let testLocationUpdate = await updatePlayerLocation(newGameState, narrativeTextRequest);
         newGameState.playerLocation = testLocationUpdate;
     }
     
-    if (narrativeTextRequest === false || narrativeTextRequest.needQuestUpdate) {
-        let testQuestUpdate = await updatePlayerQuest(newGameState, narrativeText);
+    if (narrativeTextRequest && narrativeTextRequest.questUpdateText) {
+        let testQuestUpdate = await updatePlayerQuest(newGameState, narrativeTextRequest);
         newGameState.playerQuest = testQuestUpdate;
     }
 
-    if (narrativeTextRequest && narrativeTextRequest.needInventoryUpdate) {
-        let testInventoryUpdate = await updatePlayerInventory(newGameState, narrativeText);
+    if (narrativeTextRequest && narrativeTextRequest.inventoryUpdateList && ((narrativeTextRequest.inventoryUpdateList.toAdd && narrativeTextRequest.inventoryUpdateList.toAdd.length > 0) || (narrativeTextRequest.inventoryUpdateList.toRemove && narrativeTextRequest.inventoryUpdateList.toRemove.length > 0) || (narrativeTextRequest.inventoryUpdateList.toUpdate && narrativeTextRequest.inventoryUpdateList.toUpdate.length > 0))) {
+        let testInventoryUpdate = await updatePlayerInventory(newGameState, narrativeTextRequest);
         if (testInventoryUpdate.length > 0) newGameState.playerInventory = testInventoryUpdate;
     }
 
@@ -849,11 +852,9 @@ async function main() {
             previous_narrative: [],
             playerData: {
                 hp: player.hp,
-                max_hp: player.max_hp,
                 money: player.money,
                 money_currency: player.money_currency,
                 mana: player.mana,
-                max_mana: player.max_mana,
                 exp: 0,
                 next_level_exp: 100,
                 level: 1,
@@ -901,7 +902,7 @@ async function main() {
 
 
     while (true) {
-        let updatedInventoryStats;
+        let updatedInventoryStats = null;
         let narrativeText;
         let updateInventory = false;
         let gameOver;
@@ -913,12 +914,8 @@ async function main() {
                 narrativeText = narrativeTextRequest.next_narrative_text;
                 gameOver = narrativeTextRequest.game_over;
                 console.log(`\n${translateTextTable.scenario_narrative} ` + chalk.cyan(narrativeText));
-                updateInventory = narrativeTextRequest.needPlayerUpdate || narrativeTextRequest.needInventoryUpdate || narrativeTextRequest.needLocationUpdate || narrativeTextRequest.needQuestUpdate;
-                if (updateInventory) {
-                    updatedInventoryStats = await updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest);
-                } else {
-                    if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_dont_need_update_player));
-                }
+                updatedInventoryStats = await updatePlayerDataIfNeeded(gameState, narrativeText, narrativeTextRequest);
+                await showNewItemsAndStats(updatedInventoryStats, gameState);
                 spinner.stop();
             }
 
@@ -933,13 +930,6 @@ async function main() {
             console.log(chalk.red(translateTextTable.game_over));
             process.exit();
         }
-        if (updateInventory) {
-            if (!updatedInventoryStats.playerData || !updatedInventoryStats.playerInventory) {
-                if (enableAIDebug) console.log(chalk.red(translateTextTable.debug_incorrect_player_data_regenerate));
-                continue;
-            }
-            await showNewItemsAndStats(updatedInventoryStats, gameState);
-        }
         if (!firstBoot) {
             const acceptIAAnswer = await getUserInput(chalk.magenta(translateTextTable.accept_ia_answer + ' (y/n) '), 'y');
             if (acceptIAAnswer.toLowerCase() != 'y') {
@@ -947,9 +937,9 @@ async function main() {
                 continue;
             }
         }
-
-        if (updateInventory) gameState = syncInventoryAndStats(updatedInventoryStats, gameState);
-        
+        if (updatedInventoryStats) {
+            gameState = syncInventoryAndStats(updatedInventoryStats, gameState);
+        }
         const possibleChoices = await generatePossibleChoices(gameState, narrativeText);
         let userInput;
         // Check if possible choices is an object or an array
