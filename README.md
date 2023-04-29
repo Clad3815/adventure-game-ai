@@ -22,9 +22,8 @@ And much more! Explore the game to discover all its features.
 
 ## Todo
 
-- [x] Make multiple prompt `game-multi-prompt.js` instead of one large one to avoid confusion for `gpt3.5-turbo`
 - [x] Manage each data individually to avoid confusion for `gpt3.5-turbo` (ex: `inventory` and `location`)
-- [ ] Add `gpt4` support instead of editing `generateNarrativeText` function manually
+- [ ] Optimise all data structure 
 - [ ] Generate a complete game scenario from start to end to follow a storyline.
 - [ ] Generate a main quest to the game
 - [ ] Add sub-quest system
