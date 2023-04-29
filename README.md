@@ -2,20 +2,21 @@
 
 Adventure Game Generator is a text-based game creation tool that allows you to generate your own interactive adventure games using the power of OpenAI. This project relies on the [ai-function-helper](https://github.com/Clad3815/ai-function-helper/) library to generate game content and handle player choices.
 
-This project has been tested with `gpt3.5-turbo` and must return better result with `gpt4` model.
+This project has been tested with `gpt3.5-turbo` and is expected to return better results with `gpt4` model.
 
 ## Features
 
-- [x] Customizable game settings, including language, environment, and difficulty
-- [x] Auto translate menu language to the game language if wanted
-- [x] Dynamic player class generation based on character description and player sex
-- [x] Automatic player attribute generation based on player details and game settings
-- [x] Continuous gameplay with generated narrative and choices
-- [x] Inventory management
-- [x] Automatic location generation
-- [x] Automatic quest management
-- [x] Automatic player stats management
-- [x] Auto save game
+- Customizable game settings, including language, environment, and difficulty: Set your own game parameters and see how the game evolves.
+- Auto translate menu language to the game language if wanted: Ensures a seamless gaming experience in your chosen language.
+- Dynamic player class generation based on character description and player sex: Allows for a more personalized gaming experience.
+- Automatic player attribute generation based on player details and game settings: Your player's attributes will dynamically change based on your inputs and game settings.
+- Continuous gameplay with generated narrative and choices: The game continues indefinitely, providing new narratives and choices for an engaging experience.
+- Inventory management: Manage your player's inventory throughout the game.
+- Automatic location generation: New locations are automatically generated, keeping the game fresh and exciting.
+- Automatic quest management: Quests are automatically managed for continuous gameplay.
+- Automatic player stats management: Player stats are tracked and updated automatically.
+- Auto save game: Don't worry about losing your progress, the game auto-saves.
+
 
 ## Todo
 
