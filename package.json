@@ -2,7 +2,7 @@
     "name": "adventure-game-ai",
     "version": "1.0.0",
     "description": "A full customisable game that uses AI to create a story and then you can play it.",
-    "main": "src/aiFunction.js",
+    "main": "game.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
@@ -17,9 +17,9 @@
     },
     "homepage": "https://github.com/Clad3815/adventure-game-ai#readme",
     "dependencies": {
+        "ai-function-helper": "^1.0.1",
         "chalk": "^4.1.2",
         "dotenv": "^16.0.3",
-        "openai": "^3.1.0",
         "ora": "^6.3.0"
     }
 }
