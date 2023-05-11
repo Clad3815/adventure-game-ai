@@ -23,8 +23,8 @@ async function loadOra() {
 
 let spinner;
 
-const enableDebug = false; // Set to true to enable debug mode
-const enableAIDebug = false; // Set to true to enable debug mode for AI request/answer
+const enableDebug = true; // Set to true to enable debug mode
+const enableAIDebug = true; // Set to true to enable debug mode for AI request/answer
 let translateMenu = false; // Set to true to translate the menu
 
 
@@ -803,7 +803,6 @@ async function main() {
         }
         firstBoot = false;
     } else {
-        let prompt = fs.readFileSync('./prompt/game_prompt.txt', 'utf8');
         const gameLanguage = await getUserInput('Choose the language of the game (en, fr, etc.)', 'en');
         if (gameLanguage != 'en') 
         {
@@ -904,7 +903,6 @@ async function main() {
     while (true) {
         let updatedInventoryStats = null;
         let narrativeText;
-        let updateInventory = false;
         let gameOver;
         try {
             if (firstBoot) {
